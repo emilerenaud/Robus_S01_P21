@@ -46,54 +46,74 @@ void loop()
 
   switch(step)
   {
+    // case(1):
+    //     if(forward(200) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+    // case(2):
+    //     if(turn(LEFT,90) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+    // case(3):
+    //     if(forward(200) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+    // case(4):
+    //     if(turn(LEFT,90) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+    // case(5):
+    //     if(forward(200) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+    //   case(6):
+    //     if(turn(LEFT,90) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+    // case(7):
+    //     if(forward(200) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+    // case(8):
+    //     if(turn(LEFT,90) == 0)
+    //     {
+    //       step ++;
+    //     }
+    //   break;
+
+    /*
+      Semble bien fonctionner, tres peu d'erreur sur le tour complet.  Combiner avec des avancer, l'erreur est bcp plus grande.
+    */
     case(1):
-        if(forward(200) == 0)
-        {
+        if(turn(LEFT,90) == 0)
           step ++;
-        }
-      break;
+        break;
     case(2):
         if(turn(LEFT,90) == 0)
-        {
-          step ++;
-        }
-      break;
+          step++;
+        break;
     case(3):
-        if(forward(200) == 0)
-        {
-          step ++;
-        }
-      break;
+        if(turn(LEFT,90) == 0)
+          step++;
+        break;
     case(4):
         if(turn(LEFT,90) == 0)
-        {
-          step ++;
-        }
-      break;
-    case(5):
-        if(forward(200) == 0)
-        {
-          step ++;
-        }
-      break;
-      case(6):
-        if(turn(LEFT,90) == 0)
-        {
-          step ++;
-        }
-      break;
-    case(7):
-        if(forward(200) == 0)
-        {
-          step ++;
-        }
-      break;
-    case(8):
-        if(turn(LEFT,90) == 0)
-        {
-          step ++;
-        }
-      break;
+          step++;
+        break;
   }
 }
 
@@ -231,6 +251,8 @@ bool turn(bool side, float angle)
   static float distanceArcPulse = 0;
   static bool resetEncoder = 1;
   static bool movementCompleted = 0;
+  static int32_t startValueL = 0;
+  static int32_t startValueR = 0;
 
   // reset encoder for better precision.
   if(resetEncoder == 1)
@@ -241,6 +263,8 @@ bool turn(bool side, float angle)
     ENCODER_Reset(LEFT);
     ENCODER_Reset(RIGHT);
     delay(1);
+    startValueL = ENCODER_Read(LEFT);
+    startValueR = ENCODER_Read(RIGHT);
   }
   if(side == LEFT) // turn left. left wheel dont move. Right wheel move.
   {
@@ -260,7 +284,7 @@ bool turn(bool side, float angle)
       MOTOR_SetSpeed(RIGHT,wantedSpeed);
       // if(ENCODER_Read(RIGHT) != 0) // The loop is too fast. If the encoder read more than 0, read_reset the encoder.
       // {
-      currentPulse = ENCODER_Read(RIGHT);
+      currentPulse = ENCODER_Read(RIGHT) - startValueR;
 
       // }
       return 1;
