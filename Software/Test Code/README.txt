@@ -1,0 +1,2 @@
+Un dossier pour chaque code de test. Faire un code pour tester les capteurs. Ensuite faire des fonctions pour facilement
+utiliser les capteurs. Finalement faire un nouveau fichier .cpp + .h pour le capteur.
