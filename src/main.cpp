@@ -13,8 +13,8 @@ Inclure les librairies de functions que vous voulez utiliser
 /* ****************************************************************************
 Variables globales et defines
 **************************************************************************** */
-#define START 1
-#define STOP 0
+#define ON 1
+#define OFF 0
 
 const int PulsePerTurn = 3200;
 const float Pi = 3.14159f;
@@ -41,7 +41,7 @@ float erreurIntergral(int32_t p_pulse);
 void ponderer_vitesse(uint8_t roue);
 int32_t conversion_mmpulse(int32_t mm);
 void avancerDistance(int32_t p_pulse);
-void avancer(bool startStop);
+void avancer(bool onOff);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
 
@@ -99,12 +99,12 @@ void loop()
     if(millis() - lastMillis >= 100)
     {
       lastMillis = millis();
-      avancer(START);
+      avancer(ON);
     }
   }
   else
   {
-    avancer(STOP);
+    avancer(OFF);
   }
   
 
@@ -177,10 +177,10 @@ void avancerDistance(int32_t p_pulse)
   MOTOR_SetSpeed(1,0);
 }
 
-void avancer(bool startStop)
+void avancer(bool onOff)
 {
   static bool initAvancer = 1;
-  if(startStop == START)
+  if(onOff == ON)
   {
     if(initAvancer == 1)
     {
