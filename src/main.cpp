@@ -44,7 +44,7 @@ void avancerDistance(int32_t p_pulse);
 void avancer(bool onOff);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
-
+void distance_sonar(uint8_t distance);
 
 void setup(){
   Serial.begin(9600);
@@ -228,3 +228,12 @@ void pivot(int16_t angle){
   MOTOR_SetSpeed(0,0);
   MOTOR_SetSpeed(1,0);
 }
+     void distance_sonar() {
+ float distance = SONAR_GetRange(0); //distance est en cm
+// if (distance > 100)
+ Serial.println(distance);
+ // }
+ 
+ 
+ delay(100);
+ }
