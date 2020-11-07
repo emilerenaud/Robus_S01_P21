@@ -47,43 +47,8 @@ void pivot(int16_t angle);
 
 
 void setup(){
-  BoardInit();
-  // Test experimental
-//  avancer(conversion_mmpulse(1132));
-//   tourner(90);
-//   avancer(conversion_mmpulse(713));
-//   tourner(-90);
-//   avancer(conversion_mmpulse(837));
-//   tourner(-45);
-//   avancer(conversion_mmpulse(1730));
-//   tourner(90);
-//   avancer(conversion_mmpulse(445));
-//   tourner(-45);
-//   avancer(conversion_mmpulse(1000));
-//   pivot(180);
-//   avancer(conversion_mmpulse(1000));
-//   tourner(45);
-//   avancer(conversion_mmpulse(445));
-//   tourner(-(90));
-//   avancer(conversion_mmpulse(1730));
-//   tourner(45);
-//   avancer(conversion_mmpulse(837));
-//   tourner(90);
-//   avancer(conversion_mmpulse(713));
-//   tourner(-90);
-//   avancer(conversion_mmpulse(1132));
-  // Test Theorique
-  /*avancer(conversion_mmpulse(1132));
-  tourner(90);
-  avancer(conversion_mmpulse(713));
-  tourner(-90);
-  avancer(conversion_mmpulse(836));
-  tourner(-45);
-  avancer(conversion_mmpulse(1696));
-  tourner(90);
-  avancer(conversion_mmpulse(440));
-  tourner(-45);
-  avancer(conversion_mmpulse(1055));*/
+  Serial.begin(9600);
+  BoardInit();  
 }
 
 /* ****************************************************************************
@@ -92,6 +57,7 @@ Fonctions de boucle infini (loop())
 
 void loop() 
 {
+  /*
   static uint32_t lastMillis = 0;
 
   if(ROBUS_IsBumper(REAR)) // back bumper.
@@ -106,6 +72,8 @@ void loop()
   {
     avancer(OFF);
   }
+  */
+  
   
 
 }
