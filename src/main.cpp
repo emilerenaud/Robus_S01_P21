@@ -8,12 +8,14 @@ Date: Derniere date de modification
 /* ****************************************************************************
 Inclure les librairies de functions que vous voulez utiliser
 **************************************************************************** */
+
 #include <LibRobus.h> // Essentielle pour utiliser RobUS
 #include <Arduino.h> 
 #include <Sifflet.h>
 #include <Suiveur_ligne.h>
 #include <capteur_IR.h>
 #include <DEL.h>
+#include <color_sensor.h>
 
 /* ****************************************************************************
 Variables globales et defines
@@ -40,7 +42,8 @@ float puissance_moteur[2] = {pwm, pwm};
 int32_t lastEncodeur[2] = {0,0};
 int32_t compteur;
 int etape = 0;
-int ligne = 0;         // Calcul le nombre de lignes franchies depuis le début du parcour
+int ligne = 0;                     // Calcul le nombre de lignes franchies depuis le début du parcour
+uint16_t rRef, gRef, bRef, cRef;   // Valeur de référence capteur de couleur
 
 // PROTOTYPES
 float erreurProportionel(void);
@@ -52,10 +55,15 @@ void avancer(bool onOff);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
 
-
 void setup(){
-  BoardInit();
-  // Pin mode DEL
+
+  Serial.begin(9600);  
+  BoardInit(); 
+  ColorSensorInit(&rRef, &gRef, &bRef, &cRef);
+  del_init();
+  MOTOR_SetSpeed(0,0);
+  MOTOR_SetSpeed(1,0); 
+  
 }
 
 /* ****************************************************************************
@@ -66,7 +74,7 @@ void loop()
 {
   if (etape == 0)          // Étape detection sifflet
   {     
-    if(detectionsifflet() == true){
+    if(detectionsifflet(12,13) == true){
       etape++;
     }
   }
@@ -83,7 +91,6 @@ void loop()
     int somme = 0;
     for (int i = 0; i<8; i++)
     {
-      ReferenceInstruction[i];
       somme += ReferenceInstruction[i]; 
     }
     if(somme >6)
@@ -93,44 +100,47 @@ void loop()
       etape++;
     }
   }
- else if (etape == 3)   // Étape tourner
- {
+  else if (etape == 3)   // Étape tourner
+  {
     pivot(-90);;
     etape++;
- }
-   else if (etape == 4)    // Étape attendre départ autre robot
-   {
-     delay(1000);
-     etape++;
-   }
-   else if (etape == 5)     // Étape pour avancer jusqu'à la pastille de couleur
-   {
+  }
+  else if (etape == 4)    // Étape attendre départ autre robot
+  {
+    delay(1000);
+    etape++;
+  }
+  else if (etape == 5)     // Étape pour avancer jusqu'à la pastille de couleur
+  {
     avancer(ON);
 
     int somme2 = 0;
 
     for (int i = 0; i<8; i++)
     {
-      ReferenceInstruction[i];
       somme2 += ReferenceInstruction[i]; 
     }
     if(somme2 >6)
     {
       ligne++;
     }
-    if(ligne = 2)
+    if(ligne == 2)
     {
       avancer(OFF);
       avancerDistance(conversion_mmpulse(200));
       etape++;
     }
-  }
-  else if (etape == 6)
+  } 
+  else if (etape == 6)           //Lire couleur
   {
-
+    Color c = getTrueColor();
+    gererDEL(c);
+    etape++;
+  //if(c == RED)
+  //{
+  //}
   }
-
-
+}
 
 
 /*************** FONCTIONS AVANCER - PID - TOURNER ********************/
@@ -140,7 +150,8 @@ float erreurProportionel(){
    return (vitesse-compteur) * kp;
 }
 // I
-float erreurIntergral(int32_t p_pulse){
+float erreurIntergral(int32_t p_pulse)
+{
     static uint32_t nbCycle = 0;
     nbCycle++;
     Serial.print(vitesse * nbCycle);
