@@ -9,6 +9,11 @@ Date: Derniere date de modification
 Inclure les librairies de functions que vous voulez utiliser
 **************************************************************************** */
 #include <LibRobus.h> // Essentielle pour utiliser RobUS
+#include <Arduino.h> 
+#include <Sifflet.h>
+#include <Suiveur_ligne.h>
+#include <capteur_IR.h>
+#include <DEL.h>
 
 /* ****************************************************************************
 Variables globales et defines
@@ -16,6 +21,7 @@ Variables globales et defines
 #define ON 1
 #define OFF 0
 
+int ReferenceInstruction[8]; 
 const int PulsePerTurn = 3200;
 const float Pi = 3.14159f;
 const float InchesToMm = 25.4f;
@@ -33,8 +39,9 @@ int direction[2] = {1,1};
 float puissance_moteur[2] = {pwm, pwm};
 int32_t lastEncodeur[2] = {0,0};
 int32_t compteur;
+int etape = 0;
+int ligne = 0;         // Calcul le nombre de lignes franchies depuis le début du parcour
 
-//allo
 // PROTOTYPES
 float erreurProportionel(void);
 float erreurIntergral(int32_t p_pulse);
@@ -48,42 +55,7 @@ void pivot(int16_t angle);
 
 void setup(){
   BoardInit();
-  // Test experimental
-//  avancer(conversion_mmpulse(1132));
-//   tourner(90);
-//   avancer(conversion_mmpulse(713));
-//   tourner(-90);
-//   avancer(conversion_mmpulse(837));
-//   tourner(-45);
-//   avancer(conversion_mmpulse(1730));
-//   tourner(90);
-//   avancer(conversion_mmpulse(445));
-//   tourner(-45);
-//   avancer(conversion_mmpulse(1000));
-//   pivot(180);
-//   avancer(conversion_mmpulse(1000));
-//   tourner(45);
-//   avancer(conversion_mmpulse(445));
-//   tourner(-(90));
-//   avancer(conversion_mmpulse(1730));
-//   tourner(45);
-//   avancer(conversion_mmpulse(837));
-//   tourner(90);
-//   avancer(conversion_mmpulse(713));
-//   tourner(-90);
-//   avancer(conversion_mmpulse(1132));
-  // Test Theorique
-  /*avancer(conversion_mmpulse(1132));
-  tourner(90);
-  avancer(conversion_mmpulse(713));
-  tourner(-90);
-  avancer(conversion_mmpulse(836));
-  tourner(-45);
-  avancer(conversion_mmpulse(1696));
-  tourner(90);
-  avancer(conversion_mmpulse(440));
-  tourner(-45);
-  avancer(conversion_mmpulse(1055));*/
+  // Pin mode DEL
 }
 
 /* ****************************************************************************
@@ -92,23 +64,72 @@ Fonctions de boucle infini (loop())
 
 void loop() 
 {
-  static uint32_t lastMillis = 0;
-
-  if(ROBUS_IsBumper(REAR)) // back bumper.
-  {
-    if(millis() - lastMillis >= 100)
-    {
-      lastMillis = millis();
-      avancer(ON);
+  if (etape == 0)          // Étape detection sifflet
+  {     
+    if(detectionsifflet() == true){
+      etape++;
     }
   }
-  else
+  else if (etape == 1)     // Étape tourner
   {
-    avancer(OFF);
+    pivot(90);
+    etape++;
   }
-  
+  else if (etape == 2)       // Étape centrage 
+  {
+    avancer(ON);
+    Suiveurdeligne();
 
-}
+    int somme = 0;
+    for (int i = 0; i<8; i++)
+    {
+      ReferenceInstruction[i];
+      somme += ReferenceInstruction[i]; 
+    }
+    if(somme >6)
+    {
+      avancer(OFF);
+      avancerDistance(conversion_mmpulse(30)); 
+      etape++;
+    }
+  }
+ else if (etape == 3)   // Étape tourner
+ {
+    pivot(-90);;
+    etape++;
+ }
+   else if (etape == 4)    // Étape attendre départ autre robot
+   {
+     delay(1000);
+     etape++;
+   }
+   else if (etape == 5)     // Étape pour avancer jusqu'à la pastille de couleur
+   {
+    avancer(ON);
+
+    int somme2 = 0;
+
+    for (int i = 0; i<8; i++)
+    {
+      ReferenceInstruction[i];
+      somme2 += ReferenceInstruction[i]; 
+    }
+    if(somme2 >6)
+    {
+      ligne++;
+    }
+    if(ligne = 2)
+    {
+      avancer(OFF);
+      avancerDistance(conversion_mmpulse(200));
+      etape++;
+    }
+  }
+  else if (etape == 6)
+  {
+
+  }
+
 
 
 
@@ -260,3 +281,5 @@ void pivot(int16_t angle){
   MOTOR_SetSpeed(0,0);
   MOTOR_SetSpeed(1,0);
 }
+
+
