@@ -8,8 +8,9 @@ Date: Derniere date de modification
 /* ****************************************************************************
 Inclure les librairies de functions que vous voulez utiliser
 **************************************************************************** */
+#include <Arduino.h>
 #include <LibRobus.h> // Essentielle pour utiliser RobUS
-
+#include <color_sensor.cpp>
 /* ****************************************************************************
 Variables globales et defines
 **************************************************************************** */
@@ -47,7 +48,11 @@ void pivot(int16_t angle);
 
 
 void setup(){
+
+  Serial.begin(9600);  
   BoardInit();
+
+  ColorSensorInit(&rRef, &gRef, &bRef, &cRef);
   // Test experimental
 //  avancer(conversion_mmpulse(1132));
 //   tourner(90);
@@ -92,6 +97,7 @@ Fonctions de boucle infini (loop())
 
 void loop() 
 {
+  /*
   static uint32_t lastMillis = 0;
 
   if(ROBUS_IsBumper(REAR)) // back bumper.
@@ -106,6 +112,8 @@ void loop()
   {
     avancer(OFF);
   }
+  */
+
   
 
 }
