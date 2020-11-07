@@ -34,7 +34,7 @@ float puissance_moteur[2] = {pwm, pwm};
 int32_t lastEncodeur[2] = {0,0};
 int32_t compteur;
 
-
+//allo
 // PROTOTYPES
 float erreurProportionel(void);
 float erreurIntergral(int32_t p_pulse);
