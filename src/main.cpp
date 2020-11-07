@@ -54,6 +54,7 @@ void avancerDistance(int32_t p_pulse);
 void avancer(bool onOff);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
+void FonctionServo(uint8_t servo, uint8_t angle);
 
 void setup(){
 
@@ -292,5 +293,8 @@ void pivot(int16_t angle){
   MOTOR_SetSpeed(0,0);
   MOTOR_SetSpeed(1,0);
 }
-
-
+void FonctionServo(uint8_t servo, uint8_t angle)
+{
+  SERVO_Enable(servo);
+  SERVO_SetAngle(servo, angle);
+}
