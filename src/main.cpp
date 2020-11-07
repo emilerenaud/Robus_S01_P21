@@ -73,8 +73,9 @@ Fonctions de boucle infini (loop())
 void loop() 
 {
   if (etape == 0)          // Étape detection sifflet
-  {     
-    if(detectionsifflet(12,13) == true){
+  {    
+    if(detectionsifflet() == true){
+      Serial.println("Détection sifflet");
       etape++;
     }
   }
@@ -186,7 +187,7 @@ int32_t conversion_mmpulse(int32_t mm){
 // Fonction avancer d'un nombre de pulse.
 void avancerDistance(int32_t p_pulse)
 {
-  Serial.println(p_pulse);
+  //Serial.println(p_pulse);
   direction[LEFT] = 1;
   direction[RIGHT] = 1;
   lastEncodeur[0] = lastEncodeur[1] = 0;
@@ -240,7 +241,7 @@ void avancer(bool onOff)
 // Fonction touner avec un angle. Genre
 void tourner(int16_t angle){
   int32_t pulse = conversion_mmpulse(abs(angle) * CONVERSION_DEGRE_RAD * R);
-  Serial.print(pulse); 
+  //Serial.print(pulse); 
   int8_t roue;
   if (angle > 0){
    roue = RIGHT;
@@ -255,7 +256,7 @@ void tourner(int16_t angle){
   lastEncodeur[0] = lastEncodeur[1] = 0;
   while(pulse > ENCODER_Read(roue)){
     // ponderer_vitesse(roue);
-    Serial.println(ENCODER_Read(roue));
+    //Serial.println(ENCODER_Read(roue));
     delay(2);
   }
   MOTOR_SetSpeed(roue,0);

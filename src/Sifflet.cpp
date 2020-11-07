@@ -1,11 +1,15 @@
 #include <Sifflet.h>
-const int pinAmbiant = 12;
-const int pinSifflet = 13;
-// Fonction détecteur de sifflet
-bool detectionsifflet(int pinAmbiant, int pinSifflet){  // Définir les # de pin utilisées sur l'Arduino
+const int pinAmbiant = A12;
+const int pinSifflet = A13;
 
-  if(analogRead(pinAmbiant) < analogRead(pinSifflet)){
-    return true;
+// Fonction détecteur de sifflet
+bool detectionsifflet(){  // Définir les # de pin utilisées sur l'Arduino
+//Serial.println(analogRead(pinSifflet));
+   if(analogRead(pinSifflet) > 450)
+   {
+  //     Serial.println(analogRead(pinAmbiant));
+  //     Serial.println(analogRead(pinSifflet));
+     return true;
   }else{
     return false;
    }
