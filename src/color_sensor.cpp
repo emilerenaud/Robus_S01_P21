@@ -5,8 +5,6 @@ const uint8_t NbColorReads = 10;
 
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_4X);
 
-uint16_t rRef, gRef, bRef, cRef;
-
 Color getColor(uint16_t red, uint16_t green, uint16_t blue, uint16_t clear)
 {
   short temp = 0;
