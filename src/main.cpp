@@ -49,7 +49,7 @@ float erreurIntergral(int32_t p_pulse);
 void ponderer_vitesse(uint8_t roue);
 int32_t conversion_mmpulse(int32_t mm);
 void avancerDistance(int32_t p_pulse, bool alongXAxis);
-void avancer(bool onOff, bool alongXAxis);
+int32_t avancer(bool onOff);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
 void distance_sonar(uint8_t distance);
@@ -74,6 +74,7 @@ void loop()
   static uint32_t lastMillis = 0;
   static uint32_t macroDistance = 0;
   static bool security = false;
+  static bool isBoosting = false;
     
   if(millis() - lastMillis >= 10)
   {
@@ -92,28 +93,39 @@ void loop()
 
     if (etape == 0)
     {      
-      avancer(ON, true);
+      currentPosition = macroDistance * 1000 + avancer(ON);
       if (suiveurLigne2() > 5 && !security)
       {
         security = true;
         macroDistance++;
-        currentPosition = macroDistance * 1000;
+        avancer(OFF);
+        avancer(ON);
         Serial.println("Look at me go! I'm so far!");
       }
       else if (suiveurLigne2() < 2)
+      {
+        MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT] * 1.1);
+        delay(10);
+        MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
         //Ajuster vers la droite
         Serial.println("Oops! Gotta go to the right!");
+      }
       else if (suiveurLigne2() > 2)
+      {
+        MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT] * 1.1);
+        delay(10);
+        MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT]);
         //Ajuster vers la gauche
         Serial.println("Oops! Don't wanna get out of bounds!");
+      }
 
-        if (suiveurLigne2() > 5)
-          security = false;
+      if (suiveurLigne2() > 5)
+        security = false;
     }
 
     if (etape == 1)
     {
-      avancer(OFF, true);
+      avancer(OFF);
       pivot(-90);
       avancerDistance(conversion_mmpulse(900), false); //A verifier selon le parcours
       etape = 2;
@@ -121,7 +133,7 @@ void loop()
 
     if (etape == -1)
     {
-      avancer(OFF, true);
+      avancer(OFF);
       pivot(-90);
       delay(10000); //A ajuster
       avancerDistance(conversion_mmpulse(800), false);
@@ -199,9 +211,10 @@ void avancerDistance(int32_t p_pulse, bool alongXAxis)
   MOTOR_SetSpeed(1,0);
 }
 
-void avancer(bool onOff, bool alongXAxis)
+int32_t avancer(bool onOff)
 {
   static bool initAvancer = 1;
+  static int32_t distancePulse = 0;
   if(onOff == ON)
   {
     if(initAvancer == 1)
@@ -210,6 +223,7 @@ void avancer(bool onOff, bool alongXAxis)
       direction[LEFT] = 1;
       direction[RIGHT] = 1;
       lastEncodeur[0] = lastEncodeur[1] = 0;
+      distancePulse = 0;
       ENCODER_ReadReset(0);
       ENCODER_ReadReset(1);
       MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
@@ -218,6 +232,7 @@ void avancer(bool onOff, bool alongXAxis)
 
     ponderer_vitesse(LEFT);
     ponderer_vitesse(RIGHT);
+    distancePulse = ENCODER_Read(LEFT);
   }
   else
   {
@@ -225,6 +240,7 @@ void avancer(bool onOff, bool alongXAxis)
     MOTOR_SetSpeed(LEFT,0);
     MOTOR_SetSpeed(RIGHT,0);
   }
+  return conversion_pulsemm(distancePulse);
 }
 
 // Fonction touner avec un angle. Genre
