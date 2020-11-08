@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 void Suiveurdeligne();
+uint8_t suiveurLigne2();
 extern int ReferenceInstruction[]; 
 
 #endif

@@ -32,10 +32,15 @@ const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 const int32_t vitesse = pwm * 1280; // wtf 1280 ?
 const float kp = 0.0001f;
 const float ki = 0.00002f;
+const float ballPosition = 250; //Position de la balle sur le parcours (x)
+const float ballRadius = 10; //Rayon (+ securite) de la balle
 int direction[2] = {1,1};
 float puissance_moteur[2] = {pwm, pwm};
 int32_t lastEncodeur[2] = {0,0};
 int32_t compteur;
+float currentPosition = 0;
+int etape = 0;
+bool quilleTrouve = false;
 
 //allo
 // PROTOTYPES
@@ -43,11 +48,12 @@ float erreurProportionel(void);
 float erreurIntergral(int32_t p_pulse);
 void ponderer_vitesse(uint8_t roue);
 int32_t conversion_mmpulse(int32_t mm);
-void avancerDistance(int32_t p_pulse);
-void avancer(bool onOff);
+void avancerDistance(int32_t p_pulse, bool alongXAxis);
+void avancer(bool onOff, bool alongXAxis);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
 void distance_sonar(uint8_t distance);
+void mettreAJourDistance();
 
 void setup(){
   Serial.begin(9600);
@@ -65,28 +71,64 @@ Fonctions de boucle infini (loop())
 
 void loop() 
 {
-  /*
   static uint32_t lastMillis = 0;
-
-  if(ROBUS_IsBumper(REAR)) // back bumper.
+  static uint32_t macroDistance = 0;
+  static bool security = false;
+    
+  if(millis() - lastMillis >= 10)
   {
-    if(millis() - lastMillis >= 100)
+    lastMillis = millis();
+
+    if (etape == 0 && detectionSonar(100) && currentPosition > 20)
     {
-      lastMillis = millis();
-      avancer(ON);
+      if (currentPosition < ballPosition - ballRadius || currentPosition > ballPosition + ballRadius)
+        etape = 1;
+      else
+        etape = -1; //Cas special ou la quille est allignee avec le ballon      
     }
-  }
-  else
-  {
-    avancer(OFF);
-  }
-  */
-  
-  
 
+    if (etape == 0 && currentPosition > 4900)
+      etape = 1;
+
+    if (etape == 0)
+    {      
+      avancer(ON, true);
+      if (suiveurLigne2() > 5 && !security)
+      {
+        security = true;
+        macroDistance++;
+        currentPosition = macroDistance * 1000;
+        Serial.println("Look at me go! I'm so far!");
+      }
+      else if (suiveurLigne2() < 2)
+        //Ajuster vers la droite
+        Serial.println("Oops! Gotta go to the right!");
+      else if (suiveurLigne2() > 2)
+        //Ajuster vers la gauche
+        Serial.println("Oops! Don't wanna get out of bounds!");
+
+        if (suiveurLigne2() > 5)
+          security = false;
+    }
+
+    if (etape == 1)
+    {
+      avancer(OFF, true);
+      pivot(-90);
+      avancerDistance(conversion_mmpulse(900), false); //A verifier selon le parcours
+      etape = 2;
+    }
+
+    if (etape == -1)
+    {
+      avancer(OFF, true);
+      pivot(-90);
+      delay(10000); //A ajuster
+      avancerDistance(conversion_mmpulse(800), false);
+      etape = 2;
+    }      
+  }
 }
-
-
 
 /*************** FONCTIONS AVANCER - PID - TOURNER ********************/
 /***** PID *****/
@@ -127,8 +169,12 @@ int32_t conversion_mmpulse(int32_t mm){
   return(mm*PulsePerTurn/WheelCircumference);
 }
 
+int32_t conversion_pulsemm(int32_t pulse){
+  return(pulse*WheelCircumference/PulsePerTurn);
+}
+
 // Fonction avancer d'un nombre de pulse.
-void avancerDistance(int32_t p_pulse)
+void avancerDistance(int32_t p_pulse, bool alongXAxis)
 {
   Serial.println(p_pulse);
   direction[LEFT] = 1;
@@ -153,7 +199,7 @@ void avancerDistance(int32_t p_pulse)
   MOTOR_SetSpeed(1,0);
 }
 
-void avancer(bool onOff)
+void avancer(bool onOff, bool alongXAxis)
 {
   static bool initAvancer = 1;
   if(onOff == ON)
@@ -206,42 +252,58 @@ void tourner(int16_t angle){
 }
 
 void pivot(int16_t angle){
- int32_t pulse = conversion_mmpulse(abs(angle /2) * CONVERSION_DEGRE_RAD * R);
+  int32_t pulse = conversion_mmpulse(abs(angle /2) * CONVERSION_DEGRE_RAD * R);
   if (angle > 0)
   {
     direction[LEFT] = -1;
     direction[RIGHT] = 1;
   }
-    else
-    {
-      direction[LEFT] = 1;
-      direction[RIGHT] = -1;
-    }
+  else
+  {
+    direction[LEFT] = 1;
+    direction[RIGHT] = -1;
+  }
   lastEncodeur[0] = lastEncodeur[1] = 0;
-     ENCODER_ReadReset(0);
-     ENCODER_ReadReset(1);
-      MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT] * direction[LEFT]);
-      MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT] * direction[RIGHT]);
-  
+  ENCODER_ReadReset(0);
+  ENCODER_ReadReset(1);
+  // MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT] * direction[LEFT]);
+  // MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT] * direction[RIGHT]);
+  MOTOR_SetSpeed(LEFT, 0.2 * direction[LEFT]);
+  MOTOR_SetSpeed(RIGHT, 0.2 * direction[RIGHT]);
+
   static uint32_t lastMillis = millis();
-  while(pulse > abs(ENCODER_Read(0))){
-    if(millis() - lastMillis >= 100)
+
+  while(pulse > abs(ENCODER_Read(0)) && pulse > abs(ENCODER_Read(1)))
+  {
+    if(millis() - lastMillis >= 50) // reduit a 50
     {
       lastMillis = millis();
-      ponderer_vitesse(LEFT);
-      ponderer_vitesse(RIGHT);
+
+      for (uint8_t i = 0; i < 2; i++) //Pour chaque roue
+      {
+        if(pulse > abs(ENCODER_Read(i))) // Verifier si le cote a finit de bouger.
+        {
+          ponderer_vitesse(i);           // Sinon, continuer d'avancer.
+        }
+        else
+        {
+          MOTOR_SetSpeed(i,0);           // l'arreter s'il a fini.
+        }
+      }      
     }
     // delay(100);
   }
-  MOTOR_SetSpeed(0,0);
+  MOTOR_SetSpeed(0,0); // fucking define.
   MOTOR_SetSpeed(1,0);
 }
-     void distance_sonar() {
- float distance = SONAR_GetRange(0); //distance est en cm
-// if (distance > 100)
- Serial.println(distance);
- // }
- 
- 
- delay(100);
- }
+
+bool detectionSonar(int maxRangeCm) {
+
+    if (SONAR_GetRange(0) < maxRangeCm)
+    {
+      Serial.println("Haha! I see something!");
+      return true;
+    }
+  
+  return false;
+}
