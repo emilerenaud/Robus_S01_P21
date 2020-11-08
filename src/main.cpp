@@ -36,7 +36,7 @@ const float R = 187; //mm rayon cerle robot
 const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 //Vitesse en pulse/s
 const int32_t vitesse = pwm * 150; // wtf 1280 ?
-const float kp = 0.0001f;
+const float kp = 0.0002f;
 const float ki = 0.00002f;
 int direction[2] = {1,1};
 float puissance_moteur[2] = {pwm, pwm};
@@ -72,8 +72,6 @@ void setup()
   MOTOR_SetSpeed(1,0);
   // pivot(90); // tourner a gauche  test
   // playMusique();
-  
-  
 }
 
 /* ****************************************************************************
@@ -97,40 +95,27 @@ void loop()
       delay(2000);
       etape++;
     }
-    else if (etape == 1)     // Étape tourner
+    else if (etape == 1)     // Étape tourner à droite
     {
-      pivot(-90); // tourner à droite
+      pivot(-90); 
       delay(500);
       etape++;
     }
-    else if (etape == 2)       // Étape centrage 
+    else if (etape == 2)       // Étape centrage du robot
     {
       avancer(ON);
       if(suiveurLigne2() > 6)
       {
         Serial.println("Ligne 1 trouver!");
         avancer(OFF);
+        toggle_led();      // Allumer DEL quand il voit une ligne
         avancerDistance(conversion_mmpulse(50));
         etape ++;
       }
     }
-      // Suiveurdeligne();
-
-      // int somme = 0;
-      // for (int i = 0; i<8; i++)
-      // {
-      //   somme += ReferenceInstruction[i]; 
-      // }
-      // if(somme >6)
-      // {
-      //   avancer(OFF);
-      //   avancerDistance(conversion_mmpulse(30)); 
-      //   etape++;
-      // }
-    
     else if (etape == 3)   // Étape tourner à gauche
     {
-      pivot(90);        // Tourner à gauche
+      pivot(90);        
       delay(500);
       etape++;
     }
@@ -144,61 +129,43 @@ void loop()
       avancer(ON);
       if(suiveurLigne2() > 6)
       {
+        toggle_led();
         Serial.println("Ligne 2 trouver!");
         delay(2000);
         etape ++;
-        
       }
     }
-    else if (etape == 6)
+    else if (etape == 6)       // Étape pour avancer pour clearer le capteur de couleur 
     {
-        // Serial.println("etape 6!");
         if(suiveurLigne2() > 6)
         {
+          toggle_led();
           Serial.println("Ligne 3 trouver!");
           avancer(OFF);
-          avancerDistance(conversion_mmpulse(250));
+          avancerDistance(conversion_mmpulse(250)); // Avancer pour que le capteur de couleur capte
           etape ++;
         }
     }
-      // int somme2 = 0;
-      // // fonction suiveur de ligne.
-      // for (int i = 0; i<8; i++)
-      // {
-      //   somme2 += ReferenceInstruction[i]; 
-      // }
-      // if(somme2 >6)
-      // {
-      //   ligne++;
-      // }
-      // if(ligne == 2)
-      // {
-      //   Serial.println("Ligne 2 trouver!");
-      //   avancer(OFF);
-      //   avancerDistance(conversion_mmpulse(200));
-      //   etape++;
-      // }
     
-    else if (etape == 7)           //Lire couleur
+    else if (etape == 7)           // Étape pour lire couleur
     {
       couleur = getTrueColor();
       Serial.println("Couleur = " + String(couleur));
       gererDEL(couleur);
       etape++;
     }
-    else if (etape == 8)
+    else if (etape == 8)      // Étape avncer jusqu'à l'autre ligne 
     {
       avancer(ON);
-      // Serial.println("etape 8");
       if(suiveurLigne2() > 6)
       {
-        
         Serial.println("Ligne 4 trouver!");
         avancer(OFF);
+        toggle_led();
         etape ++;
       }
     }
-    else if (etape == 9)
+    else if (etape == 9)       // Étape monter le servo (étape 9 à 11)
     {
       FonctionServo(0,45);
       avancerDistance(conversion_mmpulse(300));
@@ -219,7 +186,7 @@ void loop()
       etape ++;
       
     }
-    else if (etape == 12)
+    else if (etape == 12)  // Étape si couleur = rouge
     {
       static int s_etape = 0;
       if (couleur == RED)
@@ -229,12 +196,14 @@ void loop()
           avancer(ON);
           if(suiveurLigne2() > 6)
           {
+            toggle_led();
             s_etape++;
           }
           if (s_etape == 1)
           {
             if(suiveurLigne2() > 6)
             {
+              toggle_led();
               s_etape++;
             }
           }
@@ -251,6 +220,7 @@ void loop()
             if (suiveurLigne2() > 6)
             {
               avancer(OFF);
+              toggle_led();
             }
           }
         }
@@ -260,7 +230,7 @@ void loop()
         etape++;
       }
     }
-    else if (etape == 13)
+    else if (etape == 13)       // Étape si couleur = jaune
     {
       if (couleur == YELLOW)
       {
@@ -294,47 +264,61 @@ void loop()
       }
       
     }
-    else if (etape == 14)
+    else if (etape == 14)         // Étape si couleur = cyan
     {
       if (couleur == CYAN)
       {
-        // playMusique();
         static int s_etape = 0;
-        if (s_etape == 0)
+        if(s_etape == 0)
         {
+          avancerDistance(conversion_mmpulse(240));
+          Serial.println("fin avancer distance");
+          s_etape++;
+        }
+        else if (s_etape == 1)
+        {
+          
           avancer(ON);
           if(suiveurLigne2() > 6)
           {
+            Serial.println("ligne 1");
+            toggle_led();
             s_etape++;
           }
-          else if (s_etape == 1)
+        }
+        else if (s_etape == 2)
+        {
+          if(suiveurLigne2() > 6)
           {
-            if(suiveurLigne2() > 6)
-            {
-              s_etape++;
-            }
-          }
-          else if (s_etape == 2)
-          {
-            avancerDistance(conversion_mmpulse(150));
-            tourner(90);
+            Serial.println("ligne 2");
+            toggle_led();
             s_etape++;
           }
-          if (s_etape == 3)
+        }
+        else if (s_etape == 3)
+        {
+          avancer(OFF);
+          //avancerDistance(conversion_mmpulse(150));
+          tourner(90);
+          s_etape++;
+        }
+        else if (s_etape == 4)
+        {
+          avancer(ON);
+          if (suiveurLigne2() > 6)
           {
-            avancer(ON);
-            if (suiveurLigne2() > 6)
-            {
-              avancer(OFF);
-            }
+            Serial.println("ligne 3 ou stop");
+            avancer(OFF);
+            playMusique();
+            toggle_led();
+            s_etape ++;
+            etape ++;
           }
-          
         }
       }
       else
       {
-        etape++;
-        Serial.println("etape 14 ++");
+        etape++; // Si couleur n'est pas le CYAN
       }
     }
   }

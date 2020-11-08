@@ -6,6 +6,7 @@
 
 void gererDEL(Color capteurcouleur);
 void del_init();
+void toggle_led();
 
 // # pin utilisées sur l'arduino
 const int pinRouge = 40;

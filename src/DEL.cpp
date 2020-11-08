@@ -48,3 +48,9 @@ void gererDEL(Color capteurcouleur){
     digitalWrite(pinJaune, 0);
   }
 }
+  void toggle_led()         // Alumer DEL quand il voit une ligne
+  {
+    digitalWrite(41,1);
+    delay(500);
+    digitalWrite(41,0);
+  }
