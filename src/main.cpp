@@ -52,16 +52,19 @@ void avancerDistance(int32_t p_pulse, bool alongXAxis);
 int32_t avancer(bool onOff);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
-void distance_sonar(uint8_t distance);
+bool detectionSonar(int maxRangeCm);
 void mettreAJourDistance();
 
 void setup(){
   Serial.begin(9600);
-  BoardInit();  
+  BoardInit();
+  /*
   while (!detectionsifflet()) 
   {
     delay(10);
   }
+  */
+  delay(2000);
 }
 
 
@@ -74,7 +77,6 @@ void loop()
   static uint32_t lastMillis = 0;
   static uint32_t macroDistance = 0;
   static bool security = false;
-  static bool isBoosting = false;
     
   if(millis() - lastMillis >= 10)
   {
