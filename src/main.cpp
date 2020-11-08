@@ -49,7 +49,10 @@ void distance_sonar(uint8_t distance);
 void setup(){
   Serial.begin(9600);
   BoardInit();  
+  
+  {}
 }
+
 
 /* ****************************************************************************
 Fonctions de boucle infini (loop())
