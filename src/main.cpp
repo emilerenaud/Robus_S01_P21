@@ -9,6 +9,9 @@ Date: Derniere date de modification
 Inclure les librairies de functions que vous voulez utiliser
 **************************************************************************** */
 #include <LibRobus.h> // Essentielle pour utiliser RobUS
+#include <capteur_IR.h>
+#include <Sifflet.h>
+#include <Suiveur_ligne.h>
 
 /* ****************************************************************************
 Variables globales et defines
@@ -49,8 +52,10 @@ void distance_sonar(uint8_t distance);
 void setup(){
   Serial.begin(9600);
   BoardInit();  
-  
-  {}
+  while (!detectionsifflet()) 
+  {
+    delay(10);
+  }
 }
 
 
