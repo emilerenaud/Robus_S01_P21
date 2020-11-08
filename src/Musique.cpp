@@ -200,8 +200,8 @@ void playMusique()
 {
     pinMode(36,OUTPUT);
     sing(1);
-    sing(1);
-    sing(2);
+    // sing(1);
+    // sing(2);
 
 }
 
