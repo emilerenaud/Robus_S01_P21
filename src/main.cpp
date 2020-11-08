@@ -130,6 +130,11 @@ void loop()
       avancer(OFF);
       pivot(-90);
       avancerDistance(conversion_mmpulse(900), false); //A verifier selon le parcours
+      if (currentPosition > 3900 && currentPosition < 4500)
+      {
+        pivot(-90);
+        avancerDistance(conversion_mmpulse(600), false);
+      }
       etape = 2;
     }
 
