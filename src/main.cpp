@@ -16,6 +16,7 @@ Inclure les librairies de functions que vous voulez utiliser
 #include <capteur_IR.h>
 #include <DEL.h>
 #include <color_sensor.h>
+#include <Musique.h>
 
 /* ****************************************************************************
 Variables globales et defines
@@ -34,7 +35,7 @@ const float pwm = 0.3; // wtf pwm ?
 const float R = 187; //mm rayon cerle robot
 const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 //Vitesse en pulse/s
-const int32_t vitesse = pwm * 1280; // wtf 1280 ?
+const int32_t vitesse = pwm * 50; // wtf 1280 ?
 const float kp = 0.0001f;
 const float ki = 0.00002f;
 int direction[2] = {1,1};
@@ -56,14 +57,19 @@ void tourner(int16_t angle);
 void pivot(int16_t angle);
 void FonctionServo(uint8_t servo, uint8_t angle);
 
-void setup(){
 
+void setup()
+{
   Serial.begin(9600);  
   BoardInit(); 
   ColorSensorInit(&rRef, &gRef, &bRef, &cRef);
   del_init();
+  suiveurLigne_init();
   MOTOR_SetSpeed(0,0);
-  MOTOR_SetSpeed(1,0); 
+  MOTOR_SetSpeed(1,0);
+  // pivot(90); // tourner a gauche  test
+  // playMusique();
+  
   
 }
 
@@ -73,77 +79,91 @@ Fonctions de boucle infini (loop())
 
 void loop() 
 {
-  if (etape == 0)          // Étape detection sifflet
-  {    
-    if(detectionsifflet() == true){
-      Serial.println("Détection sifflet");
+  static uint32_t lastMillis = 0;
+  if(millis() - lastMillis >= 10) // Faire la grosse boucle au 10ms pour pas allez trop vite.
+  {
+    lastMillis = millis();
+
+    if (etape == 0)          // Étape detection sifflet
+    {    
+      if(detectionsifflet() == true){
+        Serial.println("Détection sifflet");
+        etape++;
+      }
+    }
+    else if (etape == 1)     // Étape tourner
+    {
+      pivot(90); // tourner a gauche
+      delay(500);
       etape++;
     }
-  }
-  else if (etape == 1)     // Étape tourner
-  {
-    pivot(90);
-    etape++;
-  }
-  else if (etape == 2)       // Étape centrage 
-  {
-    avancer(ON);
-    Suiveurdeligne();
+    else if (etape == 2)       // Étape centrage 
+    {
+      avancer(ON);
+      if(suiveurLigne2() > 6)
+      {
+        Serial.println("Ligne trouver!");
+        avancer(OFF);
+        avancerDistance(conversion_mmpulse(30));
+        etape ++;
+      }
+      // Suiveurdeligne();
 
-    int somme = 0;
-    for (int i = 0; i<8; i++)
-    {
-      somme += ReferenceInstruction[i]; 
+      // int somme = 0;
+      // for (int i = 0; i<8; i++)
+      // {
+      //   somme += ReferenceInstruction[i]; 
+      // }
+      // if(somme >6)
+      // {
+      //   avancer(OFF);
+      //   avancerDistance(conversion_mmpulse(30)); 
+      //   etape++;
+      // }
     }
-    if(somme >6)
+    else if (etape == 3)   // Étape tourner
     {
-      avancer(OFF);
-      avancerDistance(conversion_mmpulse(30)); 
+      pivot(-90);
+      delay(500);
       etape++;
     }
-  }
-  else if (etape == 3)   // Étape tourner
-  {
-    pivot(-90);;
-    etape++;
-  }
-  else if (etape == 4)    // Étape attendre départ autre robot
-  {
-    delay(1000);
-    etape++;
-  }
-  else if (etape == 5)     // Étape pour avancer jusqu'à la pastille de couleur
-  {
-    avancer(ON);
-
-    int somme2 = 0;
-
-    for (int i = 0; i<8; i++)
+    else if (etape == 4)    // Étape attendre départ autre robot
     {
-      somme2 += ReferenceInstruction[i]; 
-    }
-    if(somme2 >6)
-    {
-      ligne++;
-    }
-    if(ligne == 2)
-    {
-      avancer(OFF);
-      avancerDistance(conversion_mmpulse(200));
+      delay(1000);
       etape++;
     }
-  } 
-  else if (etape == 6)           //Lire couleur
-  {
-    Color c = getTrueColor();
-    gererDEL(c);
-    etape++;
-  //if(c == RED)
-  //{
-  //}
+    else if (etape == 5)     // Étape pour avancer jusqu'à la pastille de couleur
+    {
+      // avancer(ON);
+
+      int somme2 = 0;
+      // fonction suiveur de ligne.
+      for (int i = 0; i<8; i++)
+      {
+        somme2 += ReferenceInstruction[i]; 
+      }
+      if(somme2 >6)
+      {
+        ligne++;
+      }
+      if(ligne == 2)
+      {
+        avancer(OFF);
+        avancerDistance(conversion_mmpulse(200));
+        etape++;
+      }
+    } 
+    else if (etape == 6)           //Lire couleur
+    {
+      Color c = getTrueColor();
+      gererDEL(c);
+      etape++;
+    //if(c == RED)
+    //{
+    //}
+    }
   }
 }
-
 
 /*************** FONCTIONS AVANCER - PID - TOURNER ********************/
 /***** PID *****/
@@ -214,6 +234,7 @@ void avancerDistance(int32_t p_pulse)
 void avancer(bool onOff)
 {
   static bool initAvancer = 1;
+  static int32_t = distancePulse = 0;
   if(onOff == ON)
   {
     if(initAvancer == 1)
@@ -222,6 +243,7 @@ void avancer(bool onOff)
       direction[LEFT] = 1;
       direction[RIGHT] = 1;
       lastEncodeur[0] = lastEncodeur[1] = 0;
+      distancePulse = 0;
       ENCODER_ReadReset(0);
       ENCODER_ReadReset(1);
       MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
@@ -230,6 +252,7 @@ void avancer(bool onOff)
 
     ponderer_vitesse(LEFT);
     ponderer_vitesse(RIGHT);
+    distancePulse = ENCODER_Read(LEFT);
   }
   else
   {
@@ -237,6 +260,7 @@ void avancer(bool onOff)
     MOTOR_SetSpeed(LEFT,0);
     MOTOR_SetSpeed(RIGHT,0);
   }
+  // return 
 }
 
 // Fonction touner avec un angle. Genre
@@ -276,22 +300,44 @@ void pivot(int16_t angle){
       direction[RIGHT] = -1;
     }
   lastEncodeur[0] = lastEncodeur[1] = 0;
-     ENCODER_ReadReset(0);
-     ENCODER_ReadReset(1);
-      MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT] * direction[LEFT]);
-      MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT] * direction[RIGHT]);
-  
+  ENCODER_ReadReset(0);
+  ENCODER_ReadReset(1);
+  // MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT] * direction[LEFT]);
+  // MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT] * direction[RIGHT]);
+  MOTOR_SetSpeed(LEFT, 0.2 * direction[LEFT]);
+  MOTOR_SetSpeed(RIGHT, 0.2 * direction[RIGHT]);
+
   static uint32_t lastMillis = millis();
-  while(pulse > abs(ENCODER_Read(0))){
-    if(millis() - lastMillis >= 100)
+
+  while(pulse > abs(ENCODER_Read(0)) && pulse > abs(ENCODER_Read(1)))
+  {
+    if(millis() - lastMillis >= 50) // reduit a 50
     {
       lastMillis = millis();
-      ponderer_vitesse(LEFT);
-      ponderer_vitesse(RIGHT);
+
+      if(pulse > abs(ENCODER_Read(LEFT))) // Verifier si le coter gauche a finir de bouger.
+      {
+        ponderer_vitesse(LEFT);           // le faire continuer d'avancer sinon.
+      }
+      else
+      {
+        MOTOR_SetSpeed(LEFT,0);           // l'arreter s'il a fini.
+      }
+  
+      if(pulse > abs(ENCODER_Read(RIGHT)))  // same shit for right side.
+      {
+        ponderer_vitesse(RIGHT);
+      }
+      else
+      {
+        MOTOR_SetSpeed(RIGHT,0);
+      }
+      
+      
     }
     // delay(100);
   }
-  MOTOR_SetSpeed(0,0);
+  MOTOR_SetSpeed(0,0); // fucking define.
   MOTOR_SetSpeed(1,0);
 }
 void FonctionServo(uint8_t servo, uint8_t angle)
