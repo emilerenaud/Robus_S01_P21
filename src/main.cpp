@@ -17,6 +17,7 @@ Inclure les librairies de functions que vous voulez utiliser
 #include <DEL.h>
 #include <color_sensor.h>
 #include <Musique.h>
+#include <avancer.h>
 
 /* ****************************************************************************
 Variables globales et defines
@@ -35,8 +36,9 @@ const float pwm = 0.3; // wtf pwm ?
 const float R = 187; //mm rayon cerle robot
 const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 //Vitesse en pulse/s
-const int32_t vitesse = pwm * 150; // wtf 1280 ?
-const float kp = 0.0002f;
+// const int32_t vitesse = pwm * 150; // wtf 1280 ?
+int8_t vitesse = 30; // 40 pulses / 10ms.
+const float kp = 0.0001f;
 const float ki = 0.00002f;
 int direction[2] = {1,1};
 float puissance_moteur[2] = {pwm, pwm};
@@ -70,8 +72,12 @@ void setup()
   suiveurLigne_init();
   MOTOR_SetSpeed(0,0);
   MOTOR_SetSpeed(1,0);
+  ENCODER_Reset(LEFT);
+  ENCODER_Reset(RIGHT);
   // pivot(90); // tourner a gauche  test
   // playMusique();
+  // etape = -1; // pas faire le parcour. Mode debug.
+  // delay(1000);
 }
 
 /* ****************************************************************************
@@ -84,6 +90,26 @@ void loop()
   if(millis() - lastMillis >= 10) // Faire la grosse boucle au 10ms pour pas allez trop vite.
   {
     lastMillis = millis();
+    // Mode debug
+    if(etape == -1)
+    {
+      // if(avancer(ON) > 1000)
+      // {
+      //   avancer(OFF);
+      //   etape = -2;
+      // }
+      // if(forward(1000) == 0)
+      // {
+      //   etape = -2;
+      // }
+      // avancerDistance(conversion_mmpulse(1000));
+      avancerDistance(conversion_mmpulse(1000));
+      pivot(180);
+      avancerDistance(conversion_mmpulse(1000));
+      pivot(-180);
+      etape = -2;
+    }
+
 
     if (etape == 0)          // Étape detection sifflet
     {    
@@ -92,12 +118,13 @@ void loop()
         Serial.println("Détection sifflet");
         etape++;
       }
-      delay(2000);
-      etape++;
+      delay(2000);  // faire starter le robot tu seul
+      etape++;      // faire starter le robot tu seul
+      etape++;      // allez a l'etape 2
     }
     else if (etape == 1)     // Étape tourner à droite
     {
-      pivot(-90); 
+      pivot(-89); 
       delay(500);
       etape++;
     }
@@ -345,7 +372,7 @@ float erreurIntergral(int32_t p_pulse)
 void ponderer_vitesse(uint8_t roue)
 {
   int32_t nowEndodeur = abs(ENCODER_Read(roue));
-  compteur= nowEndodeur - lastEncodeur[roue];
+  compteur = nowEndodeur - lastEncodeur[roue];
   lastEncodeur[roue] = nowEndodeur;
   puissance_moteur[roue] += erreurProportionel();// + erreurIntergral(nowEndodeur);
   if(puissance_moteur[roue] < 0.2)
@@ -356,7 +383,16 @@ void ponderer_vitesse(uint8_t roue)
   {
     puissance_moteur[roue] = 1;
   }
-  MOTOR_SetSpeed(roue, puissance_moteur[roue]* direction[roue]);
+  if(roue == LEFT)
+  {
+    MOTOR_SetSpeed(roue, (puissance_moteur[roue] + 0.01) * direction[roue]);
+  }
+  else
+  {
+    MOTOR_SetSpeed(roue, puissance_moteur[roue]* direction[roue]);
+  }
+  
+  
 }
 
 // Convertion mm en pulse.
@@ -382,7 +418,7 @@ void avancerDistance(int32_t p_pulse)
 
   static uint32_t lastMillis = millis();
   while(p_pulse > ENCODER_Read(0)){
-    if(millis() - lastMillis >= 100)
+    if(millis() - lastMillis >= 10)
     {
       lastMillis = millis();
       ponderer_vitesse(LEFT);
@@ -411,11 +447,12 @@ int32_t avancer(bool onOff)
       ENCODER_ReadReset(1);
       MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
       MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT]);
+      delay(10); // le temps qu'il start a avancer.
     }
 
     ponderer_vitesse(LEFT);
     ponderer_vitesse(RIGHT);
-    distancePulse = ENCODER_Read(LEFT);
+    distancePulse = ENCODER_Read(RIGHT);
   }
   else
   {

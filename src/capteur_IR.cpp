@@ -1,7 +1,6 @@
 #include <capteur_IR.h>
 
 bool Infrarouge ()
-
 {
   if (ROBUS_ReadIR(0) <= 340)       // Doit être brancher dans le 0
   {

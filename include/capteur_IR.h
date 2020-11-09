@@ -4,6 +4,6 @@
 #include <Arduino.h>
 #include <LibRobus.h>
 
-bool Infrarouge ();
+bool Infrarouge (void);
 
 #endif
