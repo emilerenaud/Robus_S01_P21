@@ -17,7 +17,6 @@ Inclure les librairies de functions que vous voulez utiliser
 #include <DEL.h>
 #include <color_sensor.h>
 #include <Musique.h>
-#include <avancer.h>
 
 /* ****************************************************************************
 Variables globales et defines
