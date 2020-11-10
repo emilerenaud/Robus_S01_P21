@@ -29,11 +29,11 @@ const float pwm = 0.3; // wtf pwm ?
 const float R = 187; //mm rayon cerle robot
 const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 //Vitesse en pulse/s
-const int32_t vitesse = pwm * 1280; // wtf 1280 ?
+const int32_t vitesse = 200; // wtf pwm * 1280 ?
 const float kp = 0.0001f;
 const float ki = 0.00002f;
-const float ballPosition = 250; //Position de la balle sur le parcours (x)
-const float ballRadius = 10; //Rayon (+ securite) de la balle
+const float ballPosition = 2200; //Position de la balle sur le parcours (x)
+const float ballRadius = 200; //Rayon (+ securite) de la balle
 int direction[2] = {1,1};
 float puissance_moteur[2] = {pwm, pwm};
 int32_t lastEncodeur[2] = {0,0};
@@ -57,6 +57,7 @@ void mettreAJourDistance();
 
 void setup(){
   Serial.begin(9600);
+  suiveurLigne_init();
   BoardInit();
   /*
   while (!detectionsifflet()) 
@@ -77,12 +78,18 @@ void loop()
   static uint32_t lastMillis = 0;
   static uint32_t macroDistance = 0;
   static bool security = false;
+  static uint8_t timeout = 0;
     
-  if(millis() - lastMillis >= 10)
+  if(millis() - lastMillis >= 100)
   {
     lastMillis = millis();
+    timeout++;
 
-    if (etape == 0 && detectionSonar(100) && currentPosition > 20)
+    //Serial.println(SONAR_GetRange(0));
+    //Serial.println(suiveurLigne2());
+    Serial.println(currentPosition);
+
+    if (etape == 0 && detectionSonar(60) && currentPosition > 20)
     {
       if (currentPosition < ballPosition - ballRadius || currentPosition > ballPosition + ballRadius)
         etape = 1;
@@ -96,7 +103,7 @@ void loop()
     if (etape == 0)
     {      
       currentPosition = macroDistance * 1000 + avancer(ON);
-      if (suiveurLigne2() > 5 && !security)
+      if (suiveurLigne2() > 4 && !security)
       {
         security = true;
         macroDistance++;
@@ -104,35 +111,37 @@ void loop()
         avancer(ON);
         Serial.println("Look at me go! I'm so far!");
       }
-      else if (suiveurLigne2() < 2)
+      else if (suiveurLigne2() == 0 && timeout > 5)
       {
-        MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT] * 1.1);
-        delay(10);
-        MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
+        MOTOR_SetSpeed(RIGHT, 0);
+        delay(50);
+        MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT]);
         //Ajuster vers la droite
         Serial.println("Oops! Gotta go to the right!");
+        timeout = 0;
       }
-      else if (suiveurLigne2() > 2)
+      else if (suiveurLigne2() > 1 && timeout > 5)
       {
-        MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT] * 1.1);
-        delay(10);
-        MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT]);
+        MOTOR_SetSpeed(LEFT, 0);
+        delay(50);
+        MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
         //Ajuster vers la gauche
         Serial.println("Oops! Don't wanna get out of bounds!");
+        timeout = 0;
       }
 
-      if (suiveurLigne2() > 5)
+      if (suiveurLigne2() < 4)
         security = false;
     }
 
     if (etape == 1)
     {
       avancer(OFF);
-      pivot(-90);
+      pivot(70);
       avancerDistance(conversion_mmpulse(900), false); //A verifier selon le parcours
-      if (currentPosition > 3900 && currentPosition < 4500)
+      if (currentPosition > 3400 && currentPosition < 4000)
       {
-        pivot(-90);
+        pivot(100);
         avancerDistance(conversion_mmpulse(600), false);
       }
       etape = 2;
@@ -141,11 +150,12 @@ void loop()
     if (etape == -1)
     {
       avancer(OFF);
-      pivot(-90);
+      pivot(70);
       delay(10000); //A ajuster
       avancerDistance(conversion_mmpulse(800), false);
       etape = 2;
-    }      
+    }  
+
   }
 }
 
