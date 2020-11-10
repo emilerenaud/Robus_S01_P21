@@ -38,7 +38,7 @@ void gererDEL(Color capteurcouleur){
     digitalWrite(pinRouge, 0);
     digitalWrite(pinBleu, 0);
   }
-  else if(capteurcouleur == BLUE){
+  else if(capteurcouleur == CYAN){
 
     //Allumer DEL bleu
     digitalWrite(pinBleu, 1);
