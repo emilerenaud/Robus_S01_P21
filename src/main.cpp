@@ -32,8 +32,9 @@ const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 const int32_t vitesse = 200; // wtf pwm * 1280 ?
 const float kp = 0.0001f;
 const float ki = 0.00002f;
-const float ballPosition = 2200; //Position de la balle sur le parcours (x)
-const float ballRadius = 200; //Rayon (+ securite) de la balle
+const float ballPosition = 2400; //Position de la balle sur le parcours (x)
+const float bluePosition = 4000;
+const float securityRadius = 200; //Rayon de securite pour balle / zone bleue
 int direction[2] = {1,1};
 float puissance_moteur[2] = {pwm, pwm};
 int32_t lastEncodeur[2] = {0,0};
@@ -87,11 +88,13 @@ void loop()
 
     //Serial.println(SONAR_GetRange(0));
     //Serial.println(suiveurLigne2());
-    Serial.println(currentPosition);
+    //Serial.println(currentPosition);
+    //Serial.println(analogRead(A5));
 
-    if (etape == 0 && detectionSonar(60) && currentPosition > 20)
+    if (etape == 0 && detectionSonar(60) && currentPosition > 200)
     {
-      if (currentPosition < ballPosition - ballRadius || currentPosition > ballPosition + ballRadius)
+      Serial.println(currentPosition);
+      if (currentPosition < ballPosition - securityRadius || currentPosition > ballPosition + securityRadius)
         etape = 1;
       else
         etape = -1; //Cas special ou la quille est allignee avec le ballon      
@@ -103,7 +106,7 @@ void loop()
     if (etape == 0)
     {      
       currentPosition = macroDistance * 1000 + avancer(ON);
-      if (suiveurLigne2() > 4 && !security)
+      if (suiveurLigne2() > 4 && !security && (macroDistance != 3 || currentPosition > 3600))
       {
         security = true;
         macroDistance++;
@@ -117,15 +120,19 @@ void loop()
         delay(50);
         MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT]);
         //Ajuster vers la droite
+        Serial.print(currentPosition);
+        Serial.print(" - ");
         Serial.println("Oops! Gotta go to the right!");
         timeout = 0;
       }
-      else if (suiveurLigne2() > 1 && timeout > 5)
+      else if (suiveurLigne2() > 1 && timeout > 5 && (macroDistance != 3 || currentPosition > 3600))
       {
         MOTOR_SetSpeed(LEFT, 0);
         delay(50);
         MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
         //Ajuster vers la gauche
+        Serial.print(currentPosition);
+        Serial.print(" - ");
         Serial.println("Oops! Don't wanna get out of bounds!");
         timeout = 0;
       }
@@ -137,11 +144,11 @@ void loop()
     if (etape == 1)
     {
       avancer(OFF);
-      pivot(70);
-      avancerDistance(conversion_mmpulse(900), false); //A verifier selon le parcours
-      if (currentPosition > 3400 && currentPosition < 4000)
+      pivot(75);
+      avancerDistance(conversion_mmpulse(750), false); //A verifier selon le parcours
+      if (currentPosition > bluePosition - securityRadius && currentPosition < bluePosition + securityRadius)
       {
-        pivot(100);
+        pivot(-78);
         avancerDistance(conversion_mmpulse(600), false);
       }
       etape = 2;
@@ -150,12 +157,12 @@ void loop()
     if (etape == -1)
     {
       avancer(OFF);
-      pivot(70);
+      pivot(75);
       delay(10000); //A ajuster
-      avancerDistance(conversion_mmpulse(800), false);
+      avancerDistance(conversion_mmpulse(750), false);
       etape = 2;
     }  
-
+  
   }
 }
 
@@ -249,7 +256,7 @@ int32_t avancer(bool onOff)
 
     ponderer_vitesse(LEFT);
     ponderer_vitesse(RIGHT);
-    distancePulse = ENCODER_Read(LEFT);
+    distancePulse = (ENCODER_Read(LEFT) + ENCODER_Read(RIGHT)) / 2;
   }
   else
   {
