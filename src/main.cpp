@@ -36,7 +36,8 @@ const float R = 187; //mm rayon cerle robot
 const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 //Vitesse en pulse/s
 // const int32_t vitesse = pwm * 150; // wtf 1280 ?
-int8_t vitesse = 30; // 40 pulses / 10ms.
+#define TEMP_BOUCLE 10
+int32_t wantedSpeed = 45; // 40 pulses / 10ms. // normalement pu utiliser
 const float kp = 0.0001f;
 const float ki = 0.00002f;
 int direction[2] = {1,1};
@@ -49,7 +50,7 @@ uint16_t rRef, gRef, bRef, cRef;   // Valeur de référence capteur de couleur
 Color couleur; // couleur detecter par le capteur
 
 // PROTOTYPES
-float erreurProportionel(void);
+float erreurProportionel(int32_t pulseMoteur);
 float erreurIntergral(int32_t p_pulse);
 void ponderer_vitesse(uint8_t roue);
 int32_t conversion_mmpulse(int32_t mm);
@@ -86,30 +87,63 @@ Fonctions de boucle infini (loop())
 void loop() 
 {
   static uint32_t lastMillis = 0;
-  if(millis() - lastMillis >= 10) // Faire la grosse boucle au 10ms pour pas allez trop vite.
+  static uint32_t compteurDelay = 0;
+  if(millis() - lastMillis >= TEMP_BOUCLE) // Faire la grosse boucle au 10ms pour pas allez trop vite.
   {
     lastMillis = millis();
     // Mode debug
     if(etape == -1)
     {
-      // if(avancer(ON) > 1000)
-      // {
-      //   avancer(OFF);
-      //   etape = -2;
-      // }
+      if(avancer(ON) > 1000)
+      {
+        avancer(OFF);
+        etape = -2;
+      }
       // if(forward(1000) == 0)
       // {
       //   etape = -2;
       // }
       // avancerDistance(conversion_mmpulse(1000));
-      avancerDistance(conversion_mmpulse(1000));
-      pivot(180);
-      avancerDistance(conversion_mmpulse(1000));
-      pivot(-180);
-      etape = -2;
+      // avancerDistance(conversion_mmpulse(1000));
+      // pivot(180);
+      // // avancerDistance(conversion_mmpulse(1000));
+      // pivot(-180);
+
+      // // avancerDistance(conversion_mmpulse(1000));
+      // pivot(180);
+      // // avancerDistance(conversion_mmpulse(1000));
+      // pivot(-180);
+
+      // // avancerDistance(conversion_mmpulse(1000));
+      // pivot(180);
+      // // avancerDistance(conversion_mmpulse(1000));
+      // pivot(-180);
+      // etape = -2;
+    }
+    else if(etape == -2)
+    {
+      // pivot(180);
+      tourner(181);
+      delay(500);
+      etape = -3;
+    }
+    else if(etape == -3)
+    {
+      if(avancer(ON) > 1000)
+      {
+        avancer(OFF);
+        etape = -4;
+      }
+    }
+    else if(etape == -4)
+    {
+      // pivot(180);
+      tourner(181);
+      delay(500);
+      etape = -5;
     }
 
-
+  // ****************** PARCOUR *********************** //
     if (etape == 0)          // Étape detection sifflet
     {    
       if(detectionsifflet() == true)
@@ -123,7 +157,7 @@ void loop()
     }
     else if (etape == 1)     // Étape tourner à droite
     {
-      pivot(-89); 
+      pivot(-90); 
       delay(500);
       etape++;
     }
@@ -132,16 +166,17 @@ void loop()
       avancer(ON);
       if(suiveurLigne2() > 6)
       {
-        Serial.println("Ligne 1 trouver!");
+        // Serial.println("Ligne 1 trouver!");
         avancer(OFF);
-        toggle_led();      // Allumer DEL quand il voit une ligne
-        avancerDistance(conversion_mmpulse(50));
+        // toggle_led();      // Allumer DEL quand il voit une ligne
+        // avancerDistance(conversion_mmpulse(20));
         etape ++;
       }
     }
     else if (etape == 3)   // Étape tourner à gauche
     {
-      pivot(90);        
+      pivot(90); 
+      // tourner(92);       
       delay(500);
       etape++;
     }
@@ -155,22 +190,29 @@ void loop()
       avancer(ON);
       if(suiveurLigne2() > 6)
       {
-        toggle_led();
+        // toggle_led();
         Serial.println("Ligne 2 trouver!");
-        delay(2000);
+        // delay(1000);  // pas de delay. Faire non bloquant. sinon le PID bug.
         etape ++;
       }
     }
     else if (etape == 6)       // Étape pour avancer pour clearer le capteur de couleur 
     {
-        if(suiveurLigne2() > 6)
-        {
-          toggle_led();
-          Serial.println("Ligne 3 trouver!");
-          avancer(OFF);
-          avancerDistance(conversion_mmpulse(250)); // Avancer pour que le capteur de couleur capte
-          etape ++;
-        }
+      avancer(ON); // recall la fonction pour faire le PID.
+      if(compteurDelay < 10) // delay non bloquant de 1sec ish.
+      {
+        compteurDelay ++;
+      }
+      else if(suiveurLigne2() > 6)
+      {
+        // toggle_led();
+        // Serial.println("Ligne 3 trouver!");
+        avancer(OFF);
+        avancerDistance(conversion_mmpulse(150)); // Avancer pour que le capteur de couleur capte 250
+        etape ++;
+      }
+        // avancerDistance(conversion_mmpulse(1150));
+        // etape ++;
     }
     
     else if (etape == 7)           // Étape pour lire couleur
@@ -187,26 +229,26 @@ void loop()
       {
         Serial.println("Ligne 4 trouver!");
         avancer(OFF);
-        toggle_led();
+        // toggle_led();
         etape ++;
       }
     }
     else if (etape == 9)       // Étape monter le servo (étape 9 à 11)
     {
       FonctionServo(0,45);
-      avancerDistance(conversion_mmpulse(300));
-      FonctionServo(0,2);
+      avancerDistance(conversion_mmpulse(200));
+      // FonctionServo(0,2);
       etape ++;
       
     }
      else if (etape == 10)
     {
       FonctionServo(0,30);
-      avancerDistance(conversion_mmpulse(100));
+      avancerDistance(conversion_mmpulse(200));
       etape ++;
       
     }
-        else if (etape == 11)
+    else if (etape == 11)
     {
       FonctionServo(0,2);
       etape ++;
@@ -214,42 +256,9 @@ void loop()
     }
     else if (etape == 12)  // Étape si couleur = rouge
     {
-      static int s_etape = 0;
       if (couleur == RED)
       {
-        if (s_etape == 0)
-        {
-          avancer(ON);
-          if(suiveurLigne2() > 6)
-          {
-            toggle_led();
-            s_etape++;
-          }
-          if (s_etape == 1)
-          {
-            if(suiveurLigne2() > 6)
-            {
-              toggle_led();
-              s_etape++;
-            }
-          }
-  
-          if (s_etape == 2)
-          {
-            avancerDistance(conversion_mmpulse(850));
-            tourner(-90);
-            s_etape++;
-          }
-          if (s_etape == 3)
-          {
-            avancer(ON);
-            if (suiveurLigne2() > 6)
-            {
-              avancer(OFF);
-              toggle_led();
-            }
-          }
-        }
+
       }
       else
       {
@@ -260,29 +269,7 @@ void loop()
     {
       if (couleur == YELLOW)
       {
-        static int s_etape = 0;
-        if (s_etape == 0)
-        {
-          avancer(ON);
-          if(suiveurLigne2() > 6)
-          {
-            s_etape++;
-          }
-          if(s_etape == 1)
-          {
-            avancerDistance(conversion_mmpulse(250));
-            tourner(-90);
-            s_etape++;
-          }
-          if(s_etape == 2)
-          {
-            avancer(ON);
-            if (suiveurLigne2() > 6)
-            {
-              avancer(OFF);
-            }
-          }
-        }
+        
       }
       else
       {
@@ -297,7 +284,7 @@ void loop()
         static int s_etape = 0;
         if(s_etape == 0)
         {
-          avancerDistance(conversion_mmpulse(240));
+          avancerDistance(conversion_mmpulse(240)); // why the fuck  avancer de 240 ?
           Serial.println("fin avancer distance");
           s_etape++;
         }
@@ -308,22 +295,24 @@ void loop()
           if(suiveurLigne2() > 6)
           {
             Serial.println("ligne 1");
-            toggle_led();
+            // toggle_led();
             s_etape++;
           }
         }
         else if (s_etape == 2)
         {
+          avancer(ON);
           if(suiveurLigne2() > 6)
           {
             Serial.println("ligne 2");
-            toggle_led();
+            // toggle_led();
+            avancer(OFF);
             s_etape++;
           }
         }
         else if (s_etape == 3)
         {
-          avancer(OFF);
+          
           //avancerDistance(conversion_mmpulse(150));
           tourner(90);
           s_etape++;
@@ -336,7 +325,7 @@ void loop()
             Serial.println("ligne 3 ou stop");
             avancer(OFF);
             playMusique();
-            toggle_led();
+            // toggle_led();
             s_etape ++;
             etape ++;
           }
@@ -353,42 +342,50 @@ void loop()
 /*************** FONCTIONS AVANCER - PID - TOURNER ********************/
 /***** PID *****/
 // P
-float erreurProportionel(){
-   return (vitesse-compteur) * kp;
+float erreurProportionel(int32_t pulseMoteur){
+   return float((wantedSpeed-pulseMoteur) * kp);
 }
 // I
 float erreurIntergral(int32_t p_pulse)
 {
     static uint32_t nbCycle = 0;
     nbCycle++;
-    Serial.print(vitesse * nbCycle);
+    // Serial.print(vitesse * nbCycle);
     Serial.print(" ~ ");
     Serial.println(p_pulse);
-    return (vitesse * nbCycle/2 - p_pulse) * ki;
+    return (wantedSpeed * nbCycle/2 - p_pulse) * ki;
 }
 
 // Ajuster vitesse
 void ponderer_vitesse(uint8_t roue)
 {
   int32_t nowEndodeur = abs(ENCODER_Read(roue));
-  compteur = nowEndodeur - lastEncodeur[roue];
+  compteur = nowEndodeur - lastEncodeur[roue]; // Normalement pu utiliser
+  float correction = erreurProportionel(nowEndodeur - lastEncodeur[roue]);
+  puissance_moteur[roue] += correction;
+  // puissance_moteur[roue] += erreurProportionel();// + erreurIntergral(Nombre de pulse);
   lastEncodeur[roue] = nowEndodeur;
-  puissance_moteur[roue] += erreurProportionel();// + erreurIntergral(nowEndodeur);
-  if(puissance_moteur[roue] < 0.2)
-  {
-    puissance_moteur[roue] = 0.2;
-  }
-  else if(puissance_moteur[roue] > 1)
-  {
-    puissance_moteur[roue] = 1;
-  }
+  // if(puissance_moteur[roue] < 0.2)
+  // {
+  //   puissance_moteur[roue] = 0.2;
+  // }
+  // else if(puissance_moteur[roue] > 1)
+  // {
+  //   puissance_moteur[roue] = 1;
+  // }
   if(roue == LEFT)
   {
-    MOTOR_SetSpeed(roue, (puissance_moteur[roue] + 0.01) * direction[roue]);
+    MOTOR_SetSpeed(roue, (puissance_moteur[roue]) * direction[roue]);
+    // Serial.print("Gauche = " + String(puissance_moteur[roue]));
+    // Serial.print("   Compteur L = " + String(compteur));
+    // Serial.print("  Correction = " + String(correction));
   }
   else
   {
     MOTOR_SetSpeed(roue, puissance_moteur[roue]* direction[roue]);
+    // Serial.print("  Droite = " + String(puissance_moteur[roue]));
+    // Serial.print("  Compteur R = " + String(compteur));
+    // Serial.println("  Correction = " + String(correction));
   }
   
   
@@ -410,21 +407,27 @@ void avancerDistance(int32_t p_pulse)
   direction[LEFT] = 1;
   direction[RIGHT] = 1;
   lastEncodeur[0] = lastEncodeur[1] = 0;
+  puissance_moteur[LEFT] = 0.23;
+  puissance_moteur[RIGHT] = 0.20;
   ENCODER_ReadReset(0);
   ENCODER_ReadReset(1);
-  MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
-  MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT]);
+  MOTOR_SetSpeed(LEFT, 0.25);
+  delayMicroseconds(100);
+  // delay(5);
+  MOTOR_SetSpeed(RIGHT, 0.20);
 
-  static uint32_t lastMillis = millis();
-  while(p_pulse > ENCODER_Read(0)){
-    if(millis() - lastMillis >= 10)
+  static uint32_t lastMillis1 = millis();
+  while(p_pulse > ENCODER_Read(0))
+  {
+    if(millis() - lastMillis1 >= TEMP_BOUCLE)
     {
-      lastMillis = millis();
+      lastMillis1 = millis();
       ponderer_vitesse(LEFT);
       ponderer_vitesse(RIGHT);
     }
     // delay(100);
   }
+  delay(500);
   MOTOR_SetSpeed(0,0);
   MOTOR_SetSpeed(1,0);
 }
@@ -444,9 +447,14 @@ int32_t avancer(bool onOff)
       distancePulse = 0;
       ENCODER_ReadReset(0);
       ENCODER_ReadReset(1);
-      MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT]);
-      MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT]);
-      delay(10); // le temps qu'il start a avancer.
+
+      puissance_moteur[LEFT] = 0.23;
+      puissance_moteur[RIGHT] = 0.20;
+      MOTOR_SetSpeed(LEFT, 0.25);
+      delayMicroseconds(100);
+      // delay(5);
+      MOTOR_SetSpeed(RIGHT, 0.20);
+      delay(10); // le temps qu'il avance un peu.
     }
 
     ponderer_vitesse(LEFT);
@@ -458,6 +466,13 @@ int32_t avancer(bool onOff)
     initAvancer = 1;
     MOTOR_SetSpeed(LEFT,0);
     MOTOR_SetSpeed(RIGHT,0);
+    lastEncodeur[0] = lastEncodeur[1] = 0;
+    distancePulse = 0;
+    ENCODER_ReadReset(0);
+    ENCODER_ReadReset(1);
+
+    puissance_moteur[LEFT] = 0.23;
+    puissance_moteur[RIGHT] = 0.20;
   }
   return conversion_pulsemm(distancePulse);
 }
@@ -476,7 +491,7 @@ void tourner(int16_t angle){
   direction[roue] = 1;
   direction[1-roue] = 0;
   ENCODER_ReadReset(roue);
-  MOTOR_SetSpeed(roue, puissance_moteur[roue]);
+  MOTOR_SetSpeed(roue, 0.2);
   lastEncodeur[0] = lastEncodeur[1] = 0;
   while(pulse > ENCODER_Read(roue)){
     // ponderer_vitesse(roue);
@@ -503,29 +518,35 @@ void pivot(int16_t angle){
   ENCODER_ReadReset(1);
   // MOTOR_SetSpeed(LEFT, puissance_moteur[LEFT] * direction[LEFT]);
   // MOTOR_SetSpeed(RIGHT, puissance_moteur[RIGHT] * direction[RIGHT]);
-  MOTOR_SetSpeed(LEFT, 0.2 * direction[LEFT]);
-  MOTOR_SetSpeed(RIGHT, 0.2 * direction[RIGHT]);
+  MOTOR_SetSpeed(LEFT, 0.26 * direction[LEFT]);
+  MOTOR_SetSpeed(RIGHT, 0.25 * direction[RIGHT]);
 
-  static uint32_t lastMillis = millis();
+  static uint32_t lastMillis2 = millis();
 
-  while(pulse > abs(ENCODER_Read(0)) && pulse > abs(ENCODER_Read(1)))
+  int32_t encoderLeft = abs(ENCODER_Read(LEFT));
+  int32_t encoderRight = abs(ENCODER_Read(RIGHT));
+
+  while(pulse >= encoderLeft || pulse >= encoderRight)
   {
-    if(millis() - lastMillis >= 50) // reduit a 50
+    if(millis() - lastMillis2 >= TEMP_BOUCLE/5) // live a 10ms
     {
-      lastMillis = millis();
+      lastMillis2 = millis();
+      // Update Encoder each 10ms.
+      encoderLeft = abs(ENCODER_Read(LEFT));
+      encoderRight = abs(ENCODER_Read(RIGHT));
 
-      if(pulse > abs(ENCODER_Read(LEFT))) // Verifier si le coter gauche a finir de bouger.
+      if(pulse >= encoderLeft) // Verifier si le coter gauche a finir de bouger.
       {
-        ponderer_vitesse(LEFT);           // le faire continuer d'avancer sinon.
+        // ponderer_vitesse(LEFT);           // le faire continuer d'avancer sinon.
       }
       else
       {
         MOTOR_SetSpeed(LEFT,0);           // l'arreter s'il a fini.
       }
   
-      if(pulse > abs(ENCODER_Read(RIGHT)))  // same shit for right side.
+      if(pulse >= encoderRight)  // same shit for right side.
       {
-        ponderer_vitesse(RIGHT);
+        // ponderer_vitesse(RIGHT);
       }
       else
       {
@@ -536,9 +557,12 @@ void pivot(int16_t angle){
     }
     // delay(100);
   }
-  MOTOR_SetSpeed(0,0); // fucking define.
+  // delay(500);
+  MOTOR_SetSpeed(0,0); // fucking define plz.
   MOTOR_SetSpeed(1,0);
+  delay(500);
 }
+
 void FonctionServo(uint8_t servo, uint8_t angle)
 {
   SERVO_Enable(servo);
