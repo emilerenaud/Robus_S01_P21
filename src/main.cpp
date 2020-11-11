@@ -176,6 +176,7 @@ void loop()
     }
     else if (etape == 3)   // Étape tourner à gauche
     {
+      delay(1000); // attendre pour etre safe que le robot soit parti.
       avancerDistance(conversion_mmpulse(20));
       pivot(89); 
       // tourner(90);       
@@ -184,7 +185,7 @@ void loop()
     }
     else if (etape == 4)    // Étape attendre départ autre robot
     {
-      delay(10000);
+      delay(15000);
       etape++;
     }
     else if (etape == 5)     // Étape pour avancer jusqu'à la pastille de couleur
