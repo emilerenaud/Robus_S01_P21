@@ -150,17 +150,18 @@ void loop()
       {
         Serial.println("Détection sifflet");
         etape++;
+        etape++;
       }
-      delay(2000);  // faire starter le robot tu seul
-      etape++;      // faire starter le robot tu seul
-      etape++;      // allez a l'etape 2
+       // faire starter le robot tu seul
+      //etape++;      // faire starter le robot tu seul
+      //etape++;      // allez a l'etape 2
     }
-    else if (etape == 1)     // Étape tourner à droite
-    {
-      pivot(-90); 
-      delay(500);
-      etape++;
-    }
+    // else if (etape == 1)     // Étape tourner à droite NE PAS FAIRE
+    // {
+    //   pivot(-90); 
+    //   delay(500);
+    //   etape++;
+    // }
     else if (etape == 2)       // Étape centrage du robot
     {
       avancer(ON);
@@ -175,14 +176,15 @@ void loop()
     }
     else if (etape == 3)   // Étape tourner à gauche
     {
-      pivot(90); 
-      // tourner(92);       
+      avancerDistance(conversion_mmpulse(20));
+      pivot(89); 
+      // tourner(90);       
       delay(500);
       etape++;
     }
     else if (etape == 4)    // Étape attendre départ autre robot
     {
-      delay(1000);
+      delay(10000);
       etape++;
     }
     else if (etape == 5)     // Étape pour avancer jusqu'à la pastille de couleur
@@ -208,6 +210,7 @@ void loop()
         // toggle_led();
         // Serial.println("Ligne 3 trouver!");
         avancer(OFF);
+        compteurDelay = 0;
         avancerDistance(conversion_mmpulse(150)); // Avancer pour que le capteur de couleur capte 250
         etape ++;
       }
@@ -220,6 +223,7 @@ void loop()
       couleur = getTrueColor();
       Serial.println("Couleur = " + String(couleur));
       gererDEL(couleur);
+      pivot(3);
       etape++;
     }
     else if (etape == 8)      // Étape avncer jusqu'à l'autre ligne 
@@ -250,7 +254,12 @@ void loop()
     }
     else if (etape == 11)
     {
-      FonctionServo(0,2);
+      for(int i=30; i>2; i--)
+      {
+        FonctionServo(0,i);
+        delay(10);
+      }
+      // pivot(1);
       etape ++;
       
     }
@@ -258,25 +267,112 @@ void loop()
     {
       if (couleur == RED)
       {
-
+        static int s_etape = 0;
+        if(s_etape == 0)
+        {
+          avancerDistance(conversion_mmpulse(240)); // why the fuck  avancer de 240 ?
+          Serial.println("fin avancer distance");
+          s_etape++;
+        }
+        else if (s_etape == 1)
+        {
+          
+          avancer(ON);
+          if(suiveurLigne2() > 6)
+          {
+            Serial.println("ligne 1");
+            // toggle_led();
+            s_etape++;
+          }
+        }
+        else if (s_etape == 2)
+        {
+          avancer(ON);
+          if(suiveurLigne2() > 6)
+          {
+            Serial.println("ligne 2");
+            // toggle_led();
+            avancer(OFF);
+            s_etape++;
+          }
+        }
+        else if (s_etape == 3)
+        {
+          
+          avancerDistance(conversion_mmpulse(675));
+          tourner(-90);
+          s_etape++;
+        }
+        else if (s_etape == 4)
+        {
+          avancer(ON);
+          if (suiveurLigne2() > 6)
+          {
+            Serial.println("ligne 3 ou stop");
+            avancer(OFF);
+            playMusique();
+            // toggle_led();
+            s_etape ++;
+            etape ++;
+          }
+        }
       }
       else
       {
-        etape++;
+        etape++; // Si couleur n'est pas le CYAN
       }
     }
+
     else if (etape == 13)       // Étape si couleur = jaune
     {
       if (couleur == YELLOW)
       {
-        
+        static int s_etape = 0;
+        if(s_etape == 0)
+        {
+          avancerDistance(conversion_mmpulse(100)); // why the fuck  avancer de 240 ?
+          Serial.println("fin avancer distance");
+          s_etape++;
+        }
+        else if (s_etape == 1)
+        {
+          
+          avancer(ON);
+          if(suiveurLigne2() > 6)
+          {
+            Serial.println("ligne 1");
+            avancer(OFF);
+            // toggle_led();
+            s_etape++;
+            s_etape++;
+          }
+        }
+        else if (s_etape == 3)
+        {
+          avancerDistance(conversion_mmpulse(150));
+          tourner(-90);
+          s_etape++;
+        }
+        else if (s_etape == 4)
+        {
+          avancer(ON);
+          if (suiveurLigne2() > 6)
+          {
+            Serial.println("ligne 3 ou stop");
+            avancer(OFF);
+            playMusique();
+            // toggle_led();
+            s_etape ++;
+            etape ++;
+          }
+        }
       }
       else
       {
-        etape++;
+        etape++; // Si couleur n'est pas le CYAN
       }
-      
     }
+      
     else if (etape == 14)         // Étape si couleur = cyan
     {
       if (couleur == CYAN)
@@ -313,7 +409,7 @@ void loop()
         else if (s_etape == 3)
         {
           
-          //avancerDistance(conversion_mmpulse(150));
+          avancerDistance(conversion_mmpulse(30));
           tourner(90);
           s_etape++;
         }
