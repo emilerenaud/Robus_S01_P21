@@ -32,9 +32,9 @@ const float CONVERSION_DEGRE_RAD = 2*Pi/360;
 const int32_t vitesse = 200; // wtf pwm * 1280 ?
 const float kp = 0.0001f;
 const float ki = 0.00002f;
-const float ballPosition = 2400; //Position de la balle sur le parcours (x)
+const float ballPosition = 2450; //Position de la balle sur le parcours (x)
 const float bluePosition = 4000;
-const float securityRadius = 200; //Rayon de securite pour balle / zone bleue
+const float securityRadius = 150; //Rayon de securite pour balle / zone bleue
 int direction[2] = {1,1};
 float puissance_moteur[2] = {pwm, pwm};
 int32_t lastEncodeur[2] = {0,0};
@@ -60,13 +60,10 @@ void setup(){
   Serial.begin(9600);
   suiveurLigne_init();
   BoardInit();
-  /*
   while (!detectionsifflet()) 
   {
     delay(10);
   }
-  */
-  delay(2000);
 }
 
 
@@ -90,6 +87,7 @@ void loop()
     //Serial.println(suiveurLigne2());
     //Serial.println(currentPosition);
     //Serial.println(analogRead(A5));
+
 
     if (etape == 0 && detectionSonar(60) && currentPosition > 200)
     {
@@ -144,8 +142,9 @@ void loop()
     if (etape == 1)
     {
       avancer(OFF);
+      Serial.println(currentPosition);
       pivot(75);
-      avancerDistance(conversion_mmpulse(750), false); //A verifier selon le parcours
+      avancerDistance(conversion_mmpulse(800), false); //A verifier selon le parcours
       if (currentPosition > bluePosition - securityRadius && currentPosition < bluePosition + securityRadius)
       {
         pivot(-78);
@@ -157,9 +156,10 @@ void loop()
     if (etape == -1)
     {
       avancer(OFF);
+      Serial.println(currentPosition);
       pivot(75);
-      delay(10000); //A ajuster
-      avancerDistance(conversion_mmpulse(750), false);
+      delay(25000); //A ajuster
+      avancerDistance(conversion_mmpulse(800), false);
       etape = 2;
     }  
   

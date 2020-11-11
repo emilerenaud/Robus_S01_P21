@@ -1,5 +1,5 @@
 #include <Sifflet.h>
-const int pinAmbiant = A12;
+const int pinAmbiant = A2;
 const int pinSifflet = A13;
 
 // Fonction détecteur de sifflet
