@@ -123,7 +123,7 @@ void loop()
         Serial.println("Oops! Gotta go to the right!");
         timeout = 0;
       }
-      else if (suiveurLigne2() > 1 && timeout > 5 && (macroDistance != 3 || currentPosition > 3600))
+      else if (suiveurLigne2() > 1 && timeout > 5 && (macroDistance != 3 || currentPosition > 3700))
       {
         MOTOR_SetSpeed(LEFT, 0);
         delay(50);
