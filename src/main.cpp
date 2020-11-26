@@ -25,6 +25,8 @@ Variables globales et defines
 **************************************************************************** */
 #define ON 1
 #define OFF 0
+#define FORWARD 1
+#define BACKWARD 0
 
 #define TEMP_BOUCLE 10
 
@@ -44,6 +46,7 @@ void setup()
   suiveurLigne_init();
   moteur_init();
   delay(2000);
+  bougerDistance(100,FORWARD);
   // playMusique();
 
 
@@ -56,49 +59,78 @@ Fonctions de boucle infini (loop())
 void loop() 
 {
   static uint32_t lastMillis = 0;
-  static uint32_t compteurDelay = 0;
-  static int once = 1;
+  static int step = 1;
   uint8_t ligne = 0;
-
-  if(millis() - lastMillis >= TEMP_BOUCLE) // Faire la grosse boucle au 10ms pour pas allez trop vite.
+  static bool run = 0;
+  if(ROBUS_IsBumper(3) == 1) // bumper arriere.
   {
-    lastMillis = millis();
-    ligne = suiveurLigne3();
-    Serial.println(ligne,HEX);
-    if(once)
-    {
-      if(avancer(ON) > 5000)
-      {
-        avancer(OFF);
-        once = 0;
-      }
-      if(ligne == 0x08 || ligne == 0x18 || ligne == 0x10) // au centre.
-      {
-        set_wantedSpeed(LEFT,30);   // same speed
-        set_wantedSpeed(RIGHT,30);  // .
-      }
-      else if(ligne == 0x0C || ligne == 0x4) // un peu a gauche.
-      {
-        set_wantedSpeed(LEFT,40);
-      }
-      else if(ligne == 0x06 || ligne == 0x02 || ligne == 0x03 || ligne == 0x01) // bcp gauche.
-      {
-        set_wantedSpeed(LEFT,45);
-        set_wantedSpeed(RIGHT,25);
-      }
-      else if(ligne == 0x30 || ligne == 0x20) // un peu a droite.
-      {
-        set_wantedSpeed(RIGHT,40);
-      }
-      else if(ligne == 0x60 || ligne == 0x40 || ligne == 0xC0 || ligne == 0x80) // bcp a droite.
-      {
-        set_wantedSpeed(RIGHT,45);
-        set_wantedSpeed(LEFT,25);
-        Serial.println("BCP RIGHT");
-      }
+    run = 1;
+  }
 
-    }
-  } // end timed loop (10ms)
+  if(run)
+  {
+    if(millis() - lastMillis >= TEMP_BOUCLE) // Faire la grosse boucle au 10ms pour pas allez trop vite.
+    {
+      lastMillis = millis();
+      ligne = suiveurLigne3();
+      Serial.println(ligne,HEX);
+      if(step == 1)
+      {
+        if(get_distanceParcouru() > 2000)
+        {
+          bouger(OFF,FORWARD);
+          step = 0;
+        }
+        if(ligne == 0x00)
+        {
+          // bouger(ON,BACKWARD);
+          bouger(OFF,FORWARD);
+        }
+        else if(ligne == 0x08 || ligne == 0x18 || ligne == 0x10) // au centre.
+        {
+          set_wantedSpeed(LEFT,30);   // same speed
+          set_wantedSpeed(RIGHT,30);  // .
+          bouger(ON,FORWARD);
+        }
+        else if(ligne == 0x0C || ligne == 0x4) // un peu a gauche.
+        {
+          set_wantedSpeed(RIGHT,40);
+          bouger(ON,FORWARD);
+        }
+        else if(ligne == 0x06 || ligne == 0x02 || ligne == 0x03 || ligne == 0x01) // bcp gauche.
+        {
+          set_wantedSpeed(RIGHT,45);
+          set_wantedSpeed(LEFT,25);
+          bouger(ON,FORWARD);
+        }
+        else if(ligne == 0x30 || ligne == 0x20) // un peu a droite.
+        {
+          set_wantedSpeed(LEFT,40);
+          bouger(ON,FORWARD);
+        }
+        else if(ligne == 0x60 || ligne == 0x40 || ligne == 0xC0 || ligne == 0x80) // bcp a droite.
+        {
+          set_wantedSpeed(LEFT,45); 
+          set_wantedSpeed(RIGHT,25);
+          bouger(ON,FORWARD);
+        }
+        else if(ligne == 0xF0 || ligne == 0xF8) // tourner a droite.
+        {
+          // tourner(RIGHT,90);
+          step = 2;
+        }
+
+      } // end step 1
+      else if(step == 2)
+      {
+        // set_distanceParcouru(0);
+        // set_distanceAFaire(100);
+        bougerDistance(100,FORWARD);
+        tourner(RIGHT,90);
+        step++;
+      }
+    } // end timed loop (10ms)
+  }
 } // end loop.
 
 /*************** FONCTIONS AVANCER - PID - TOURNER ********************/
