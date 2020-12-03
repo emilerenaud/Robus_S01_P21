@@ -44,46 +44,11 @@ void avancerDistance(int32_t p_pulse);
 void avancer(bool onOff);
 void tourner(int16_t angle);
 void pivot(int16_t angle);
+void gererEntrees();
 
 
 void setup(){
   BoardInit();
-  // Test experimental
-//  avancer(conversion_mmpulse(1132));
-//   tourner(90);
-//   avancer(conversion_mmpulse(713));
-//   tourner(-90);
-//   avancer(conversion_mmpulse(837));
-//   tourner(-45);
-//   avancer(conversion_mmpulse(1730));
-//   tourner(90);
-//   avancer(conversion_mmpulse(445));
-//   tourner(-45);
-//   avancer(conversion_mmpulse(1000));
-//   pivot(180);
-//   avancer(conversion_mmpulse(1000));
-//   tourner(45);
-//   avancer(conversion_mmpulse(445));
-//   tourner(-(90));
-//   avancer(conversion_mmpulse(1730));
-//   tourner(45);
-//   avancer(conversion_mmpulse(837));
-//   tourner(90);
-//   avancer(conversion_mmpulse(713));
-//   tourner(-90);
-//   avancer(conversion_mmpulse(1132));
-  // Test Theorique
-  /*avancer(conversion_mmpulse(1132));
-  tourner(90);
-  avancer(conversion_mmpulse(713));
-  tourner(-90);
-  avancer(conversion_mmpulse(836));
-  tourner(-45);
-  avancer(conversion_mmpulse(1696));
-  tourner(90);
-  avancer(conversion_mmpulse(440));
-  tourner(-45);
-  avancer(conversion_mmpulse(1055));*/
 }
 
 /* ****************************************************************************
@@ -259,4 +224,9 @@ void pivot(int16_t angle){
   }
   MOTOR_SetSpeed(0,0);
   MOTOR_SetSpeed(1,0);
+}
+
+void GererEntrees()
+{
+  //gererBoutons();
 }
