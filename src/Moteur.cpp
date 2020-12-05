@@ -79,7 +79,7 @@ void bouger(bool onOff,bool direction)
   static int32_t totalLoop = 1;
   int32_t encoderLeft = 0; 
   int32_t encoderRight = 0;
-  static uint8_t directionRoue = 0;
+  static int8_t directionRoue = 0;
 
   if(onOff == ON)
   {
@@ -91,22 +91,23 @@ void bouger(bool onOff,bool direction)
       totalLoop = 1;
       ENCODER_Reset(0);
       ENCODER_Reset(1);
-      
+      if(direction == FORWARD)
+      {
+        directionRoue = -1;
+      }
+      else if(direction == BACKWARD)
+      {
+        directionRoue = 1;
+      }
     }
 
-    if(direction == FORWARD)
-    {
-      directionRoue = 1;
-    }
-    else if(direction == BACKWARD)
-    {
-      directionRoue = -1;
-    }
-
-    encoderLeft = abs(ENCODER_ReadReset(LEFT));
-    encoderRight = abs(ENCODER_ReadReset(RIGHT));
+    encoderLeft = (ENCODER_ReadReset(LEFT));
+    encoderRight = (ENCODER_ReadReset(RIGHT));
+    encoderLeft = abs(encoderLeft);
+    encoderRight = abs(encoderRight);
+    // distanceParcouruPulse += encoderLeft;
     distanceParcouruPulse += (encoderLeft + encoderRight) / 2; // faire la moyenne des 2 pcq les vitesses vont changer un peu.
-
+    // Serial.println(distanceParcouruPulse);
     // PID shit.
     errorTotalLeft += wantedSpeed[LEFT] - encoderLeft; // incrementer error total pour I.
     errorTotalRight += wantedSpeed[RIGHT] - encoderRight; // incrementer error total pour I
@@ -133,8 +134,9 @@ void bouger(bool onOff,bool direction)
 void bougerDistance(int32_t distanceMM, bool direction)
 {
   int32_t lastMillis = 0;
-  set_distanceParcouru(0);
-  while(get_distanceParcouru() <= distanceMM)
+  // set_distanceParcouru(0);
+  distanceParcouruPulse = 0;
+  while(conversion_pulsemm(distanceParcouruPulse) <= distanceMM)
   {
     if(millis() - lastMillis >= 10)
     {
@@ -155,29 +157,33 @@ void tourner(bool direction, float angle)
   
   if(direction == LEFT)
   {
-    directionLeft = -1;
-    directionRight = 1;
-  }
-  else
-  {
     directionLeft = 1;
     directionRight = -1;
   }
+  else
+  {
+    directionLeft = -1;
+    directionRight = 1;
+  }
   ENCODER_ReadReset(LEFT);
   ENCODER_ReadReset(RIGHT);
-  int32_t encoderLeft = abs(ENCODER_Read(LEFT));
-  int32_t encoderRight = abs(ENCODER_Read(RIGHT));
+  int32_t encoderLeft = (ENCODER_Read(LEFT));
+  int32_t encoderRight = (ENCODER_Read(RIGHT));
+  encoderLeft = abs(encoderLeft);
+  encoderRight = abs(encoderRight);
 
   MOTOR_SetSpeed(LEFT,0.25 * directionLeft);
   MOTOR_SetSpeed(RIGHT,0.25 * directionRight);
-  while(pulse >= encoderLeft && pulse >= encoderRight)
+  while(pulse >= encoderLeft || pulse >= encoderRight)
   {
     if(millis() - lastMillis2 >= 10) // live a 10ms
     {
       lastMillis2 = millis();
       // Update Encoder each 10ms.
-      encoderLeft = abs(ENCODER_Read(LEFT));
-      encoderRight = abs(ENCODER_Read(RIGHT));
+      encoderLeft = (ENCODER_Read(LEFT));
+      encoderRight = (ENCODER_Read(RIGHT));
+      encoderLeft = abs(encoderLeft);
+      encoderRight = abs(encoderRight);
 
       if(pulse >= encoderLeft) // Verifier si le coter gauche a finir de bouger.
       {
@@ -202,4 +208,42 @@ void tourner(bool direction, float angle)
   MOTOR_SetSpeed(RIGHT,0);
   ENCODER_Reset(LEFT);
   ENCODER_Reset(RIGHT);
+}
+
+void parcourTable(void)
+{
+  static uint8_t position = 0;
+  if(position == 0) // personne 1
+  {
+    bougerDistance(500,FORWARD);
+    tourner(LEFT,90);
+    position ++;
+  }
+  else if(position == 1) // personne 2
+  {
+    delay(100);
+    tourner(RIGHT,90);
+    bougerDistance(500,FORWARD);
+    delay(100);
+    tourner(LEFT,90);
+    position ++;
+  }
+  else if(position == 2) // personne 3
+  {
+    delay(100);
+    tourner(RIGHT,90);
+    bougerDistance(500,FORWARD);
+    delay(100);
+    tourner(LEFT,90);
+    position ++;
+  }
+  else if(position == 3) // retour au point de depart.
+  {
+    delay(100);
+    tourner(LEFT,90);
+    bougerDistance(1500,FORWARD);
+    delay(100);
+    tourner(LEFT,179);
+    position = 0;
+  }
 }

@@ -6,8 +6,8 @@
 
 #define ON 1
 #define OFF 0
-#define FORWARD 1
-#define BACKWARD 0
+#define FORWARD 0
+#define BACKWARD 1
 
 const float Kp = 0.0002f;
 const float Ki = 0.00001f;
@@ -31,6 +31,7 @@ float calculPID(float speed, float currentPulse, int errorTotal, int totalLoop);
 void bouger(bool onOff,bool direction);
 void bougerDistance(int32_t distanceMM, bool direction);
 void tourner(bool direction, float angle);
+void parcourTable(void);
 
 
 
