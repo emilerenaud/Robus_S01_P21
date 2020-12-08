@@ -2,7 +2,7 @@
 
 #define LED_PIN 7
 #define LED_COUNT 24
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+// Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 void colorWipe(uint32_t color, int wait) 
 {

@@ -1,9 +1,10 @@
-#ifndef Strip_DEL.h
+#ifndef Strip_DEL_H
 
-#define Strip_DEL.h
+#define Strip_DEL_H
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 
+extern Adafruit_NeoPixel strip;
 // 1 couleur sur la longeur de la strip
 void colorWipe(uint32_t color, int wait);
 

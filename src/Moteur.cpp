@@ -74,8 +74,8 @@ void bouger(bool onOff,bool direction)
   static bool initAvancer = 1;
   static int32_t errorTotalLeft = 0;
   static int32_t errorTotalRight = 0;
-  static float speedLeft = 0.20;
-  static float speedRight = 0.20;
+  static float speedLeft = 0.25;
+  static float speedRight = 0.25;
   static int32_t totalLoop = 1;
   int32_t encoderLeft = 0; 
   int32_t encoderRight = 0;
@@ -172,8 +172,8 @@ void tourner(bool direction, float angle)
   encoderLeft = abs(encoderLeft);
   encoderRight = abs(encoderRight);
 
-  MOTOR_SetSpeed(LEFT,0.25 * directionLeft);
-  MOTOR_SetSpeed(RIGHT,0.25 * directionRight);
+  MOTOR_SetSpeed(LEFT,0.3 * directionLeft);
+  MOTOR_SetSpeed(RIGHT,0.3 * directionRight);
   while(pulse >= encoderLeft || pulse >= encoderRight)
   {
     if(millis() - lastMillis2 >= 10) // live a 10ms
@@ -216,16 +216,16 @@ void parcourTable(void)
   if(position == 0) // personne 1
   {
     bougerDistance(500,FORWARD);
-    tourner(LEFT,90);
+    tourner(LEFT,89);
     position ++;
   }
   else if(position == 1) // personne 2
   {
     delay(100);
-    tourner(RIGHT,90);
+    tourner(RIGHT,89);
     bougerDistance(500,FORWARD);
     delay(100);
-    tourner(LEFT,90);
+    tourner(LEFT,88);
     position ++;
   }
   else if(position == 2) // personne 3
@@ -234,16 +234,16 @@ void parcourTable(void)
     tourner(RIGHT,90);
     bougerDistance(500,FORWARD);
     delay(100);
-    tourner(LEFT,90);
+    tourner(LEFT,86);
     position ++;
   }
   else if(position == 3) // retour au point de depart.
   {
     delay(100);
-    tourner(LEFT,90);
+    tourner(LEFT,86);
     bougerDistance(1500,FORWARD);
     delay(100);
-    tourner(LEFT,179);
+    tourner(LEFT,178);
     position = 0;
   }
 }

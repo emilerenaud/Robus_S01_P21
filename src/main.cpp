@@ -18,6 +18,8 @@ Inclure les librairies de functions que vous voulez utiliser
 #include <DEL.h>
 #include <color_sensor.h>
 #include <Musique.h>
+#include <Bouton.h>
+#include <Adafruit_NeoPixel.h>
 
 
 /* ****************************************************************************
@@ -31,22 +33,81 @@ Variables globales et defines
 #define TEMP_BOUCLE 10
 
 
+#define POMPE_A_HIGH 11
+#define POMPE_A_LOW 10
+#define POMPE_A_PWM 9
+#define POMPE_B_HIGH 41
+#define POMPE_B_LOW 42
+#define POMPE_B_PWM 8
 
 int etape = 0;
 int ligne = 0;                     // Calcul le nombre de lignes franchies depuis le début du parcour
 
-// PROTOTYPES
+// Object 
+#define LED_PIN 7
+#define LED_COUNT 24
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
+// Constantes
+const uint8_t LONGEUR_STRIPE = 24;
+const uint8_t BOND_STRIPE = 8;
+const uint8_t BOND_DECOMPTE = 1;
+const uint8_t NB_COCKTAIL = LONGEUR_STRIPE / BOND_STRIPE;
+
+uint8_t comptrCocktail = 0; 
+int8_t comptrConfirmation = 0; //pt depart strip
+
+uint8_t etat = 0;
+uint8_t couleurCocktail[NB_COCKTAIL][3] = 
+{
+ // {RED, GREEN, BLUE}    
+    {255,   0,  0}, // Vert
+    {100, 100,  0}, // Jaune
+    {0, 255,   0} // Rouge
+};
+
+// prototype
+void melange_1(void);
+void melange_2(void);
+void melange_3(void);
+int Pourcentage(uint8_t valeur);
+
+// FonctionServo
+void FonctionServo(uint8_t servo, uint8_t angle)
+{
+  SERVO_Enable(servo);
+  SERVO_SetAngle(servo, angle);
+}
 
 void setup()
 {
   Serial.begin(9600);
   BoardInit(); 
 
-  // suiveurLigne_init();
+  // Init pompe
+  pinMode(POMPE_A_HIGH,OUTPUT);
+  pinMode(POMPE_A_LOW,OUTPUT);
+  pinMode(POMPE_B_HIGH,OUTPUT);
+  pinMode(POMPE_B_LOW,OUTPUT);
+  digitalWrite(POMPE_A_HIGH,HIGH);
+  digitalWrite(POMPE_B_HIGH,HIGH);
+  digitalWrite(POMPE_A_LOW,LOW);
+  digitalWrite(POMPE_B_LOW,LOW);
+
+
+  InitBouton();
+
+  strip.begin();            // Initialise la strip de DEL (obligatoire)
+  strip.show();             // Étaint les DEL
+  strip.setBrightness(50);  // Initialise la luminosité des DEL à 1/5 de leur max -> max = 255 
+  
+  FonctionServo(0, 160);
+  FonctionServo(0, 158);
   moteur_init();
-  delay(2000);
-  // bougerDistance(100,FORWARD);
+
+  // delay(2000);
+    //  Serial.println("d");
+ // bougerDistance(100,FORWARD);
   // playMusique();
 
 
@@ -65,22 +126,268 @@ void loop()
   if(ROBUS_IsBumper(3) == 1) // bumper arriere.
   {
     run = 1;
+    Serial.println("allo");
+  }
+  if(run == 0)
+  {
+    GererBouton();
+    if(FrontMontant(1) == HIGH)
+    {
+      run = 1;
+    }
   }
 
   if(run)
   {
-    if(millis() - lastMillis >= TEMP_BOUCLE) // Faire la grosse boucle au 10ms pour pas allez trop vite.
-    {
-      lastMillis = millis();
-      if(step == 1)
+      // Inputs en parallele
+      GererBouton();
+
+      static uint8_t lastComptrB = -1;
+      static uint32_t lastDecompteConf = 0;
+      switch (etat)
       {
-        parcourTable();
-        delay(2000);
-      }
-    } // end timed loop (10ms)
+        case 0: // Avancer le robot selon emplacement defini
+          lastDecompteConf  = 0;
+          delay(500);
+          parcourTable();
+          delay(500);
+          etat = 1;
+          break;
+
+
+        case 1: // Decompte de confirmation
+        { 
+          if (FrontMontant(0) == 1 )
+          {
+              etat = 2;
+              Serial.println("Choisir le cocktail");
+          }
+    
+          if(millis() - lastDecompteConf >= 500)
+          {
+            if(lastDecompteConf  == 0)
+            {
+                for(uint8_t i = 0; i < LONGEUR_STRIPE; i++)
+                {
+                    strip.setPixelColor(i, strip.Color(255, 0, 0));
+                    Serial.print(" O ");
+                }
+
+                comptrConfirmation = (LONGEUR_STRIPE - 1);
+            }
+            else
+            { 
+                for(int8_t i = comptrConfirmation; i > (comptrConfirmation - BOND_DECOMPTE); i--)
+                {
+                    strip.setPixelColor(i, strip.Color(0, 0, 0));
+                    // Serial.print(" A "); // DEGUB
+                }
+                comptrConfirmation -= BOND_DECOMPTE;
+
+                if(comptrConfirmation < 0)
+                {
+                  etat = 0;
+                }
+            }
+
+            strip.show();
+
+            Serial.print(" | Compteur = ");
+            Serial.println(comptrConfirmation);
+            
+            lastDecompteConf = millis();
+          }
+        }  
+          break;
+
+
+        case 2: // Choix du cocktail
+
+        // Curseur du cocktail
+        if (FrontMontant(1) == HIGH)
+        {  
+          if(comptrCocktail < NB_COCKTAIL - 1) 
+            comptrCocktail++;
+        } 
+        if (FrontMontant(2) == HIGH)
+        {  
+          if(comptrCocktail > 0)
+            comptrCocktail--;
+        }
+
+        // Indicateur du choix du cocktail
+        if(comptrCocktail != lastComptrB)
+        {
+          //Serial.println(comptrCocktail);
+          lastComptrB = comptrCocktail;
+          
+          for(uint8_t i = 0; i < LONGEUR_STRIPE; i++)
+          {
+            // Serial.println((uint8_t)(ii==comptrCocktail)*255);
+            // if(i == comptrCocktail)
+            if((i/ BOND_STRIPE) == comptrCocktail)
+            {
+              strip.setPixelColor(i, strip.Color(couleurCocktail[comptrCocktail][0], couleurCocktail[comptrCocktail][1], couleurCocktail[comptrCocktail][2]));
+              Serial.print(" O ");
+            }
+            else
+            {
+              strip.setPixelColor(i, strip.Color(0, 0, 0));
+              Serial.print(" - ");
+            }
+          }
+
+          strip.show();
+
+          Serial.print(" | Compteur = ");
+          Serial.println(comptrCocktail);  
+        } 
+
+        if (EtatBTN(1) == HIGH && EtatBTN(2) == HIGH)
+        {
+          etat = 0;
+          lastComptrB = 1;
+          comptrCocktail = 0;
+        }
+
+        if (FrontMontant(0) == 1 )
+        {
+          //Sortir plateau
+          FonctionServo(0, 20);
+          etat = 3;
+          for (uint8_t j = 0; j < LONGEUR_STRIPE; j++)
+          {
+            strip.setPixelColor(j, strip.Color(0, 0, 0));
+          }
+          strip.show();
+          lastDecompteConf  = millis();
+          comptrConfirmation = 0; 
+          // Serial.println("Transition 2 -> 3"); // DEBUG
+        }
+          break;
+
+
+        case 3: // Preparation du cocktail
+          // Effet visuel preparation cocktail (avec DEL)
+          if(millis() - lastDecompteConf >= 50)
+          {
+            uint32_t chrono = micros();
+            lastDecompteConf  = millis();
+            if(comptrConfirmation < LONGEUR_STRIPE)
+            {
+              strip.setPixelColor(comptrConfirmation, strip.Color(couleurCocktail[comptrCocktail][0], couleurCocktail[comptrCocktail][1], couleurCocktail[comptrCocktail][2]));
+            }
+            else
+            {
+              strip.setPixelColor(comptrConfirmation%LONGEUR_STRIPE, strip.Color(0,0,0));
+            }
+            strip.show();    
+
+            comptrConfirmation = ++comptrConfirmation%(LONGEUR_STRIPE*2);
+            Serial.println(micros() - chrono);
+          }
+
+          
+        
+          delay(100);
+          // Verser le cocktail
+          if(comptrConfirmation >= 40)
+          {
+            FonctionServo(0,22);
+            switch(comptrCocktail)
+            {
+              case 0:
+              Serial.println("Cocktail 1 fucker"); // rouge 
+                melange_1();
+                break;
+              case 1:
+              Serial.println("Cocktail 2 fucker");
+                melange_2();
+                break;
+              case 2:
+              Serial.println("Cocktail 3 fucker");
+                melange_3();
+                break;
+            }
+            comptrCocktail = 0;
+            lastComptrB = 1;
+            playMusique();
+            FonctionServo(0,160);
+            FonctionServo(0,158);
+
+            etat=0;
+          }
+          break;
+
+
+        case 4: // Etat du reservoir
+          // Si vide ...
+
+          // Continuer la run
+          Serial.println("Boom");
+          etat = 10;
+        default:
+          break;
+      
+    
+      // Outputs en parallele
+      // GererMusique();
+    }    
   }
 } // end loop.
 
+int Pourcentage(uint8_t valeur)
+{
+  int x = map(valeur,0,100,0,255);
+  return x;
+}
+
+void melange_2() // Vert
+{
+  // primer les pompes au debut 500ms.
+  analogWrite(POMPE_A_PWM,Pourcentage(100)); // lautre
+  delay(100);
+  analogWrite(POMPE_B_PWM,Pourcentage(80)); // yan
+  delay(500);
+  // starter le melange
+  analogWrite(POMPE_A_PWM,Pourcentage(70)); // lautre
+  analogWrite(POMPE_B_PWM,Pourcentage(40)); // yan
+  delay(2000);
+  analogWrite(POMPE_A_PWM,0);
+  analogWrite(POMPE_B_PWM,0);
+}
+
+void melange_1()
+{
+  // primer les pompes au debut 500ms.
+  analogWrite(POMPE_A_PWM,Pourcentage(100)); // lautre
+  delay(100);
+  analogWrite(POMPE_B_PWM,Pourcentage(80)); // yan
+  delay(500);
+  // starter le melange
+  analogWrite(POMPE_A_PWM,Pourcentage(40)); // lautre
+  analogWrite(POMPE_B_PWM,Pourcentage(40)); // yan
+  delay(1000);
+  analogWrite(POMPE_A_PWM,0);
+  delay(1000);
+  analogWrite(POMPE_B_PWM,0);
+}
+
+void melange_3()
+{
+  // primer les pompes au debut 500ms.
+  analogWrite(POMPE_A_PWM,Pourcentage(100)); // lautre
+  delay(100);
+  analogWrite(POMPE_B_PWM,Pourcentage(80)); // yan
+  delay(500);
+  // starter le melange
+  analogWrite(POMPE_A_PWM,Pourcentage(100)); // lautre
+  analogWrite(POMPE_B_PWM,Pourcentage(40)); // yan
+  delay(1000);
+  analogWrite(POMPE_B_PWM,0);
+  delay(1500);
+  analogWrite(POMPE_A_PWM,0);
+}
 /*************** FONCTIONS AVANCER - PID - TOURNER ********************/
 /***** PID *****/
 // P

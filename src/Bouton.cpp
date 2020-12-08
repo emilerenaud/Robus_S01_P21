@@ -1,9 +1,9 @@
 #include "Bouton.h" 
   
 // PINS BOUTONS
-#define BTN_DEL_ROUGE 52
-#define BTN_DEL_BLEU 53
-#define BTN_DEL_JAUNE 51
+#define BTN_DEL_ROUGE 40
+#define BTN_DEL_BLEU 38
+#define BTN_DEL_JAUNE 39
 
 const uint8_t BOUTONS[] = {BTN_DEL_ROUGE, BTN_DEL_BLEU, BTN_DEL_JAUNE};
 const uint8_t SIZE_BTN = sizeof(BOUTONS)/sizeof(BOUTONS[0]);
@@ -52,10 +52,10 @@ void GererBouton(){
  
 }
 
-bool EtatBTN(uint8_t id_btn){
-  buttonStates[id_btn];
+uint8_t EtatBTN(uint8_t id_btn){
+  return buttonStates[id_btn];
 }
 
 bool FrontMontant(uint8_t id_btn){
-  buttonRises[id_btn];
+  return buttonRises[id_btn];
 }

@@ -5,7 +5,7 @@
 
 void InitBouton();
 void GererBouton();
-bool EtatBTN(uint8_t id_btn);
+uint8_t EtatBTN(uint8_t id_btn);
 bool FrontMontant(uint8_t id_btn);
 
 #endif //BOUTON_H
